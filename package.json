@@ -1,0 +1,46 @@
+{
+  "name": "pfa",
+  "version": "1.0.0",
+  "description": "Private, on-device credit card statement analyser. One shared JavaScript core, Electron on the desktop, an installable PWA on iPhone and tablet. No backend, no account, no cloud.",
+  "author": "chevcodes",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "desktop-app/electron-main.cjs",
+  "scripts": {
+    "postinstall": "node developer-tools/copy-vendor.js",
+    "vendor": "node developer-tools/copy-vendor.js",
+    "web": "node developer-tools/serve.js",
+    "start": "electron .",
+    "test": "node --test tests/*.test.mjs",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "pdfjs-dist": "^4.6.82"
+  },
+  "devDependencies": {
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3"
+  },
+  "allowScripts": {
+    "electron": true
+  },
+  "build": {
+    "appId": "com.ccanalyser.desktop",
+    "productName": "Personal Finance Analyser",
+    "files": [
+      "index.html",
+      "service-worker.js",
+      "interface/**",
+      "application/**",
+      "settings/**",
+      "desktop-app/**",
+      "third-party/**"
+    ],
+    "directories": { "output": "dist" },
+    "win": { "target": "nsis", "icon": "interface/icons/icon-512.png" },
+    "mac": { "target": "dmg", "icon": "interface/icons/icon-512.png" },
+    "linux": { "target": "AppImage", "icon": "interface/icons/icon-512.png" }
+  }
+}

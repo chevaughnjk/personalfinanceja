@@ -1,0 +1,57 @@
+pfa/
+├── .git/
+├── .gitignore
+├── favicon.ico
+├── file-tree.txt
+├── index.html
+├── package-lock.json
+├── package.json
+├── README.md
+├── service-worker.js
+├── application/
+│   ├── accounts-render.js
+│   ├── app.js
+│   ├── cards-render.js
+│   ├── categorise.js
+│   ├── category-picker.js
+│   ├── data-export.js
+│   ├── manage-data.js
+│   ├── read-statements.js
+│   ├── reporting.js
+│   ├── shared-helpers.js
+│   └── storage.js
+├── desktop-app/
+│   ├── electron-main.cjs
+│   └── electron-preload.cjs
+├── developer-tools/
+│   ├── copy-vendor.js
+│   └── serve.js
+├── interface/
+│   ├── icons/
+│   │   ├── apple-touch-icon.png
+│   │   ├── icon-192.png
+│   │   ├── icon-512.png
+│   │   └── icon-maskable-512.png
+│   ├── manifest.json
+│   └── styles.css
+├── launcher/
+│   ├── Launch.cmd
+│   ├── launch.ps1
+│   └── logs/
+│       ├── crash-20260823-125518.log
+│       ├── launcher-20260823-125514.log
+│       ├── launcher-20260823-131911.log
+│       ├── web-20260823-123238.log
+│       └── web-20260823-131918.log
+├── node_modules/
+├── settings/
+│   ├── category-rules.js
+│   ├── config.json
+│   ├── jamaica-merchants.json
+│   ├── merchant-intelligence.js
+│   └── user-rules.seed.json
+└── third-party/
+    ├── README.md
+    ├── pdf.min.mjs
+    ├── pdf.worker.min.mjs
+    └── pdf.worker.min.txt

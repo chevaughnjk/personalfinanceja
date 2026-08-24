@@ -1,0 +1,58 @@
+# ===========================================================
+# Personal Finance Analyser - .gitignore
+# Keeps dependencies, personal data and secrets out of the
+# public repository. Review this list before your first push.
+# ===========================================================
+
+# ---- Node / npm ----
+node_modules/
+npm-debug.log*
+package-lock.json.bak
+
+# ---- Build / packaged app output ----
+dist/
+release/
+build/
+out/
+
+# ---- Corporate / TLS certificates ----
+# Never publish an internal root CA certificate.
+certs/
+*.pem
+*.crt
+*.cer
+
+# ---- Personal financial data ----
+# Real statements, exported data and history files must never
+# be committed. Only sample/fixture files used by the tests
+# should exist in the repo, and only if they contain no real
+# personal information.
+data/
+*.pdf
+!tests/**/*.pdf
+history-export*.json
+*.ccbackup
+*.enc
+
+# ---- Local app data / IndexedDB dumps (if ever exported to disk) ----
+*.sqlite
+*.db
+
+# ---- Editor / OS clutter ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# ---- Electron build artifacts ----
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.msi
+
+# ---- Environment / secrets ----
+.env
+.env.*
+tests/fixtures/*.json

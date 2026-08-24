@@ -1,0 +1,851 @@
+{
+  "app": {
+    "name": "Personal Finance Analyser",
+    "shortName": "Finance Analyser"
+  },
+  "currency": {
+    "code": "JMD",
+    "symbol": "$",
+    "locale": "en-JM",
+    "decimals": 2
+  },
+  "display": {
+    "theme": "auto"
+  },
+  "colours": {
+    "accent": "#0F6CBD",
+    "accentDark": "#0A4C87",
+    "accentDeep": "#0A4C87",
+    "good": "#1E7A46",
+    "warn": "#B4460E",
+    "ink": "#1b1b1f",
+    "muted": "#5b5b66",
+    "background": "#ffffff",
+    "surface": "#f5f7fa",
+    "line": "#e3e6ea",
+    "darkBackground": "#16181d",
+    "darkSurface": "#1e2128",
+    "darkInk": "#eceef2",
+    "darkMuted": "#9aa0ab",
+    "darkLine": "#2c313b"
+  },
+  "special": {
+    "fallback": "Uncategorised",
+    "paymentCategory": "Card Payment",
+    "refundCategory": "Refund / Reversal",
+    "feeCategories": [
+      "Fees & Interest",
+      "Government & Tax"
+    ]
+  },
+  "disclosure": "This app is optimised for Jamaican statement data. Some merchant classifications come from a shared Jamaica focused knowledge base and are refined by your own corrections, which always take priority.",
+  "merchants": {
+    "file": "jamaica-merchants.json",
+    "note": "When a statement is imported, each descriptor is first checked against this researched merchant list (name, aliases, category, brand/group, parent, country, confidence). If nothing matches, the existing category rules below decide. A person's own corrections always win over both."
+  },
+  "bankDescriptorCleanup": {
+    "note": "Statement-format facts about how a bank counterparty text is formatted - never application logic, never a category decision. Applied, in order, to every bank-ledger counterparty description before display, after the existing header-fragment peel. Includes structural removal of a sending bank's SWIFT/BIC code (matched by the ISO 9362 8- or 11-character shape for the correspondent countries that route these wires, not one hardcoded country) and the trailing payment-reference suffix (any opaque alphanumeric trace/RTGS/ACH token that contains a digit, not only digit-led ones) that ride along in third-party transfer narratives.",
+    "rules": [
+      {
+        "pattern": "^\\*(?:bns\\s+)?",
+        "flags": "i",
+        "replacement": "",
+        "note": "ABM/POS terminal marker: a leading '*BNS ' or bare '*' before the real merchant name."
+      },
+      {
+        "pattern": "\\s+for\\s+\\d{1,2}[A-Za-z]{3}\\d{2}\\s*$",
+        "flags": "i",
+        "replacement": "",
+        "note": "Statement processing-date suffix (' For 29Dec25'), confirmed optional - the same merchant appears both with and without it."
+      },
+      {
+        "pattern": "\\s+jm\\s*$",
+        "flags": "i",
+        "replacement": "",
+        "note": "Trailing standalone country code, never glued onto another word."
+      },
+      {
+        "pattern": "\\bf\\s+inan\\.?\\s+centre\\b",
+        "flags": "i",
+        "replacement": "Financial Centre",
+        "note": "Wrapped 'Constant Spring Financial Centre' split by a PDF column boundary."
+      },
+      {
+        "pattern": "\\b(Salary|Payroll)\\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?=,\\s*Payroll\\b)",
+        "flags": "i",
+        "replacement": "$1",
+        "note": "Payroll ACH narratives commonly embed the pay-period month (a documented Nacha PAYROLL-description convention, not specific to any one employer). Strips it so recurring salary deposits from the same employer group under one counterparty across every pay period instead of splitting into one group per month."
+      },
+      {
+        "pattern": "\\s+(Citibank(\\s*N\\.?A\\.?)?|JPMorgan\\s*Chase(\\s*Bank)?(\\s*N\\.?A\\.?)?|Chase\\s*Bank|Bank\\s*of\\s*New\\s*York\\s*Mellon|BNY\\s*Mellon|HSBC(\\s*Bank)?(\\s*USA)?|Barclays(\\s*Bank)?|Standard\\s*Chartered(\\s*Bank)?|Deutsche\\s*Bank(\\s*Trust)?|BNP\\s*Paribas|Wells\\s*Fargo(\\s*Bank)?|Bank\\s*of\\s*America)\\s*$",
+        "flags": "i",
+        "replacement": "",
+        "note": "International USD/GBP wires commonly append the correspondent/clearing bank used to route the payment after the true beneficiary name. This list covers the major named global USD/GBP correspondents, not any single merchant, so a wire beneficiary groups correctly with that same beneficiary's other transactions regardless of which correspondent bank handled clearing."
+      },
+      {
+        "pattern": ",\\s*[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?(?=\\s*,\\s*\\d)",
+        "flags": "i",
+        "replacement": ""
+      },
+      {
+        "pattern": "\\bthird\\s+party\\s+trf\\s+fee\\b",
+        "flags": "i",
+        "replacement": "Third Party Transfer Fee"
+      },
+      {
+        "pattern": "(?:\\s*,\\s*(?=[A-Z0-9]*\\d)[A-Z0-9]{8,})+\\s*$",
+        "flags": "i",
+        "replacement": ""
+      }
+    ]
+  },
+  "bankMovementKinds": {
+    "note": "Bank-native movement kinds for the Accounts tab. Not the card spending taxonomy: bank money is income, transfers, bills, fees, tax and cash. A row's kind is decided in read-statements.js bankMovementKind() - own-account/round-trip first, then cash deposit, then household, then a resolved merchant's category coarsened via categoryToKind, then the statement's own printed TYPE matched against typeRules (plain uppercase substrings, no regex), then direction. Adding a rule here changes the breakdown with no code change.",
+    "labels": {
+      "income": "Income",
+      "payment": "Payments to people",
+      "bill": "Bills & standing payments",
+      "fees": "Fees & charges",
+      "tax": "Government & tax",
+      "cash-withdrawal": "Cash withdrawals",
+      "cash-deposit": "Cash deposits",
+      "household": "Support to household",
+      "internal": "Between your own accounts",
+      "other": "Other movements"
+    },
+    "order": ["income", "payment", "bill", "fees", "tax", "cash-withdrawal", "cash-deposit", "household", "internal", "other"],
+    "colours": {
+      "income": "#3f9d6b",
+      "payment": "#2f6fb0",
+      "bill": "#5a78c2",
+      "fees": "#b5642e",
+      "tax": "#c98a1b",
+      "cash-withdrawal": "#4aa3a3",
+      "cash-deposit": "#6b8e3d",
+      "household": "#9a5aa8",
+      "internal": "#8a8f99",
+      "other": "#557f9e"
+    },
+    "categoryToKind": {
+      "Insurance": "bill",
+      "Banking & Transfers": "bill",
+      "Loan Repayment": "bill",
+      "Utilities": "bill",
+      "Telecom": "bill",
+      "Government & Tax": "tax"
+    },
+    "typeRules": [
+      { "match": "SPECIAL SERVICE CHARGE", "kind": "fees" },
+      { "match": "SERVICE CHARGE", "kind": "fees" },
+      { "match": "TRANSACTIONAL FEE", "kind": "fees" },
+      { "match": "WITHHOLDING TAX", "kind": "tax" },
+      { "match": "GOVT TAX", "kind": "tax" },
+      { "match": "GCT", "kind": "tax" },
+      { "match": "ABM WITHDRAWAL", "kind": "cash-withdrawal" },
+      { "match": "ABM DEPOSIT", "kind": "cash-deposit" },
+      { "match": "INTEREST PAYMENT", "kind": "income" },
+      { "match": "SCOTIA DIRECT CREDIT", "kind": "income" },
+      { "match": "SALARY", "kind": "income" },
+      { "match": "PAYROLL", "kind": "income" },
+      { "match": "ELECTRONIC DATA DEBIT", "kind": "bill" },
+      { "match": "ELECTRONIC DEBIT", "kind": "bill" },
+      { "match": "PC-BILL PAYMENT", "kind": "bill" }
+    ]
+  },
+  "confidence": {
+    "confident": "high",
+    "review": "low",
+    "ruleConfidence": 0.9,
+    "unknownConfidence": 0
+  },
+  "categories": [
+    {
+      "name": "Card Payment",
+      "description": "Payments made to the card",
+      "sector": "Internal - Card Payment",
+      "ownership": "internal",
+      "patterns": {
+        "universal": [
+          "internet\\s*-\\s*card\\s*payment",
+          "card\\s*payment",
+          "online\\s*payment",
+          "payment\\s*-\\s*thank\\s*you",
+          "pre-?authorized\\s*payment"
+        ]
+      }
+    },
+    {
+      "name": "Refund / Reversal",
+      "description": "Money returned to the card",
+      "sector": "Internal - Refund",
+      "ownership": "internal",
+      "patterns": {
+        "universal": [
+          "refund",
+          "reversal",
+          "chargeback",
+          "credit\\s*note",
+          "cash\\s*back",
+          "cashback"
+        ]
+      }
+    },
+    {
+      "name": "Fees & Interest",
+      "description": "Bank charges, interest and card fees",
+      "sector": "Financial - Fees",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "annual\\s*fee",
+          "late\\s*fee",
+          "service\\s*charge",
+          "membership\\s*fee",
+          "interest\\s*charge",
+          "finance\\s*charge",
+          "over-?limit\\s*fee",
+          "foreign\\s*transaction",
+          "fx\\s*fee",
+          "cash\\s*advance\\s*fee",
+          "insurance\\s*premium",
+          "credit\\s*card\\s*fee",
+          "join\\s*fee"
+        ]
+      }
+    },
+    {
+      "name": "Government & Tax",
+      "description": "GCT, customs, taxes and government fees",
+      "sector": "Government",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "\\btax\\b",
+          "\\btaxes\\b",
+          "\\bcustoms\\b",
+          "passport",
+          "stamp\\s*duty",
+          "\\bvat\\b",
+          "inland\\s*revenue",
+          "traffic\\s*ticket",
+          "collectorate"
+        ]
+      }
+    },
+    {
+      "name": "Subscriptions",
+      "description": "Recurring digital services",
+      "sector": "Subscription - Digital",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "apple\\.com",
+          "apple\\s*(one|tv|music|services)",
+          "itunes",
+          "netflix",
+          "spotify",
+          "disney",
+          "\\bhbo\\b",
+          "amazon\\s*prime",
+          "dropbox",
+          "microsoft\\s*365",
+          "google\\s*(one|storage|\\*)",
+          "youtube\\s*premium",
+          "canva",
+          "openai",
+          "chatgpt",
+          "adobe",
+          "linkedin",
+          "patreon",
+          "icloud",
+          "github",
+          "blackbox\\s*subscription",
+          "\\bnorton\\b",
+          "hulu",
+          "paramount",
+          "peacock",
+          "sportsmax",
+          "playstation",
+          "\\bpsn\\b",
+          "nintendo",
+          "twitch",
+          "audible",
+          "\\bzoom\\b",
+          "grammarly",
+          "figma",
+          "slack",
+          "nordvpn",
+          "expressvpn",
+          "\\bvpn\\b",
+          "mcafee",
+          "1password",
+          "anthropic",
+          "claude",
+          "perplexity",
+          "midjourney",
+          "streaming"
+        ]
+      }
+    },
+    {
+      "name": "Online Shopping",
+      "description": "Online marketplaces",
+      "sector": "E-commerce",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "amazon\\s*mktpl",
+          "amazon\\s*marketplace",
+          "amzn",
+          "\\bamazon\\b",
+          "aliexpress",
+          "\\bebay\\b",
+          "\\betsy\\b",
+          "shopify",
+          "paypal",
+          "\\bwish\\b",
+          "shein",
+          "\\btemu\\b",
+          "alibaba",
+          "steamgames",
+          "\\bsteam\\b"
+        ]
+      }
+    },
+    {
+      "name": "Courier & Shipping",
+      "description": "Freight, courier and delivery",
+      "sector": "Logistics - Courier",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "\\bdhl\\b",
+          "fedex",
+          "\\bups\\b",
+          "courier",
+          "freight",
+          "customs\\s*broker",
+          "delivery",
+          "dispatch"
+        ]
+      }
+    },
+    {
+      "name": "Telecom",
+      "description": "Phone, data and airtime",
+      "sector": "Telecom",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "top\\s*up",
+          "recharge",
+          "airtime",
+          "internet\\s*service",
+          "broadband",
+          "\\bwi-?fi\\b",
+          "\\bfib(re|er)\\b",
+          "\\bisp\\b"
+        ]
+      }
+    },
+    {
+      "name": "Utilities",
+      "description": "Electricity and water",
+      "sector": "Utilities",
+      "ownership": "household",
+      "patterns": {
+        "universal": [
+          "electric(ity)?\\s*bill",
+          "light\\s*bill",
+          "water\\s*bill",
+          "utility\\s*bill",
+          "utilities"
+        ]
+      }
+    },
+    {
+      "name": "Insurance",
+      "description": "Insurance premiums and cover",
+      "sector": "Financial - Insurance",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "insurance",
+          "assurance",
+          "critical\\s*illness",
+          "single\\s*life",
+          "\\blife\\s*cover\\b",
+          "health\\s*cover"
+        ]
+      }
+    },
+    {
+      "name": "Banking & Transfers",
+      "description": "Bank services and money transfers",
+      "sector": "Financial - Bank",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "western\\s*union",
+          "moneygram",
+          "money\\s*gram",
+          "world\\s*remit",
+          "remittance",
+          "\\bria\\b",
+          "sendwave"
+        ]
+      }
+    },
+    {
+      "name": "Fuel & Transport",
+      "description": "Fuel, taxis, flights and travel movement",
+      "sector": "Transport",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "\\bshell\\b",
+          "gas\\s*station",
+          "service\\s*station",
+          "\\buber\\b",
+          "\\blyft\\b",
+          "\\btaxi\\b",
+          "\\bcab\\b",
+          "car\\s*rental",
+          "rental\\s*car",
+          "jet\\s*blue",
+          "jetblue",
+          "american\\s*airlines",
+          "southwest",
+          "\\bairline\\b",
+          "airways",
+          "airport",
+          "airfare",
+          "\\bbaggage\\b",
+          "parking",
+          "\\btoll\\b",
+          "rent-?a-?car",
+          "enterprise\\s*rent",
+          "\\bavis\\b",
+          "hertz",
+          "budget\\s*rent"
+        ]
+      }
+    },
+    {
+      "name": "Auto & Vehicle",
+      "description": "Vehicle parts, service and repairs",
+      "sector": "Automotive",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "auto\\s*parts",
+          "\\btoyota\\b",
+          "\\bhonda\\b",
+          "tyre|tire",
+          "\\bmuffler\\b",
+          "auto\\s*mart",
+          "\\bmotor\\b",
+          "garage",
+          "mechanic",
+          "car\\s*wash",
+          "auto\\s*services?",
+          "\\bparts\\b"
+        ]
+      }
+    },
+    {
+      "name": "Groceries",
+      "description": "Supermarkets and food stores",
+      "sector": "Retail - Grocery",
+      "ownership": "household",
+      "patterns": {
+        "universal": [
+          "\\bsupermarket\\b",
+          "super\\s*market",
+          "\\bgrocer(y|ies)?\\b",
+          "food\\s*store",
+          "mini-?\\s*mart",
+          "fresh\\s*foods",
+          "general\\s*food",
+          "wholesale",
+          "wal-?mart",
+          "walmart",
+          "wm\\s*supercenter",
+          "publix",
+          "pricesmart"
+        ]
+      }
+    },
+    {
+      "name": "Pharmacy & Health",
+      "description": "Pharmacies, doctors and dental",
+      "sector": "Healthcare",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "pharmac(y|ies)",
+          "drug\\s*store",
+          "hospital",
+          "\\bclinic\\b",
+          "dental",
+          "dentist",
+          "\\bmedical\\b",
+          "doctor",
+          "\\blab\\b",
+          "medlab",
+          "optical",
+          "eye\\s*care"
+        ]
+      }
+    },
+    {
+      "name": "Dining & Takeout",
+      "description": "Restaurants, takeout and bars",
+      "sector": "Food Service",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "restaurant",
+          "\\bcafe\\b",
+          "\\bgrill\\b",
+          "\\bdiner\\b",
+          "bistro",
+          "\\bbar\\b",
+          "bakery",
+          "patties",
+          "\\bjerk\\b",
+          "pizzeria",
+          "pizza",
+          "\\bdeli\\b",
+          "coffee",
+          "catering",
+          "\\bbbq\\b",
+          "brewery",
+          "lounge",
+          "\\bpub\\b",
+          "sushi",
+          "\\bwok\\b",
+          "oxtail",
+          "wings",
+          "kitchen",
+          "eatery",
+          "canteen",
+          "\\bsupper\\b",
+          "\\broti\\b",
+          "juices?",
+          "\\bkfc\\b",
+          "wendy",
+          "burger",
+          "cook\\s*shop",
+          "\\bfusion\\b",
+          "seafood",
+          "\\bt\\.?g\\.?i\\.?\\b",
+          "fridays",
+          "popeye",
+          "indian\\s*cuisin",
+          "drive-?thru",
+          "\\bcuisine\\b",
+          "chinese",
+          "\\bfood\\b",
+          "starbucks",
+          "church.?s\\s*chick",
+          "smoke\\s*house",
+          "\\bresto\\b",
+          "cakery",
+          "japanese\\s*rest",
+          "\\bchicken\\b",
+          "subway",
+          "chipotle",
+          "mcdonald"
+        ]
+      }
+    },
+    {
+      "name": "Hotels & Travel",
+      "description": "Hotels, resorts and stays",
+      "sector": "Travel",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "sandals",
+          "iberostar",
+          "holiday\\s*inn",
+          "\\bvrbo\\b",
+          "\\bairbnb\\b",
+          "\\bresort\\b",
+          "\\bhotel\\b",
+          "guest\\s*house",
+          "villa",
+          "all-?suite",
+          "\\binn\\b"
+        ],
+        "head": [
+          "hilton",
+          "marriott",
+          "hyatt",
+          "radisson",
+          "\\britz\\b",
+          "sheraton",
+          "courtyard",
+          "hampton"
+        ]
+      }
+    },
+    {
+      "name": "Entertainment & Recreation",
+      "description": "Cinema, events, clubs and leisure",
+      "sector": "Entertainment",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "\\bcinema\\b",
+          "\\bmovies?\\b",
+          "eventbrite",
+          "eb\\s*\\*",
+          "\\bmusic\\b",
+          "country\\s*club",
+          "\\bclub\\b",
+          "\\bconcert\\b",
+          "\\bfete\\b",
+          "\\bparty\\b",
+          "amusement",
+          "bowling",
+          "arcade",
+          "\\bgolf\\b",
+          "\\bgym\\b",
+          "fitness",
+          "ice\\s*cream",
+          "wales\\s*bowl",
+          "\\bzoo\\b"
+        ]
+      }
+    },
+    {
+      "name": "Education",
+      "description": "Schools, tuition and courses",
+      "sector": "Education",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "tuition",
+          "\\bschool\\b",
+          "\\bexam\\b",
+          "academy",
+          "college",
+          "learning",
+          "\\bprep\\b",
+          "lessons",
+          "cambridge",
+          "universit",
+          "duolingo",
+          "babbel",
+          "khan\\s*academy",
+          "\\bedx\\b",
+          "coursera",
+          "udemy",
+          "bookstore"
+        ]
+      }
+    },
+    {
+      "name": "Loan Repayment",
+      "description": "Loan payments",
+      "sector": "Financial - Loan",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "\\bloan\\b",
+          "loan\\s*repay",
+          "loan\\s*payment",
+          "loan\\s*installment",
+          "loan\\s*account"
+        ]
+      }
+    },
+    {
+      "name": "Cash & ATM",
+      "description": "Cash advances and withdrawals",
+      "sector": "Cash",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "\\batm\\b",
+          "cash\\s*advance",
+          "cash\\s*withdrawal",
+          "withdrawal"
+        ]
+      }
+    },
+    {
+      "name": "Betting & Gaming",
+      "description": "Lottery, betting and gaming",
+      "sector": "Entertainment - Gaming",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "betting",
+          "\\blotto\\b",
+          "wager",
+          "jackpot",
+          "betway",
+          "bingo",
+          "poker"
+        ]
+      }
+    },
+    {
+      "name": "Retail & Department",
+      "description": "Shops and department stores",
+      "sector": "Retail",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "department\\s*store",
+          "hardware",
+          "\\bfurniture\\b",
+          "boutique",
+          "clothing",
+          "apparel",
+          "\\bshoe\\b",
+          "footwear",
+          "\\bmall\\b",
+          "\\bplaza\\b",
+          "outlet",
+          "variety",
+          "\\bstore\\b"
+        ]
+      }    },
+    {
+      "name": "Home & Services",
+      "description": "Household and personal services",
+      "sector": "Personal Services",
+      "ownership": "personal",
+      "patterns": {
+        "universal": [
+          "errand",
+          "\\bsalon\\b",
+          "barber",
+          "\\bspa\\b",
+          "cosmeto",
+          "cleaners?",
+          "laundry",
+          "landscap",
+          "plumb",
+          "electrician",
+          "repair",
+          "\\bnursery\\b",
+          "water\\s*company",
+          "filtered",
+          "\\bflora\\b",
+          "florist",
+          "\\bflowers?\\b",
+          "cleaning"
+        ]
+      }
+    }
+  ],
+  "locationTokens": [
+    "piarco",
+    "nmia",
+    "norman manley",
+    "maracas",
+    "caymanas",
+    "devon house",
+    "fort lauderda",
+    "west palm bea",
+    "lake wales",
+    "lakeland",
+    "okeechobee",
+    "montgomery",
+    "bellevue",
+    "plantation",
+    "george town",
+    "drax hall",
+    "trincity"
+  ],
+  "keepUpper": [
+    "KFC",
+    "GCT",
+    "NCB",
+    "ICWI",
+    "TAJ",
+    "NWC",
+    "JPS",
+    "NHT",
+    "VAT",
+    "ATM",
+    "DHL",
+    "UPS",
+    "USD",
+    "TTD",
+    "JMD",
+    "GBP",
+    "EUR",
+    "CAD",
+    "BWIA",
+    "CIBC",
+    "FCIB",
+    "JMMB",
+    "JN",
+    "SVL",
+    "UWI",
+    "HBO",
+    "TV",
+    "II",
+    "III",
+    "IV",
+    "PICA",
+    "NHF",
+    "MLSS",
+    "PATH",
+    "CXC",
+    "MOE",
+    "US",
+    "UK",
+    "USA",
+    "BCIC",
+    "JNGI",
+    "AFS",
+    "QWI",
+    "CPJ",
+    "FESCO",
+    "SLB",
+    "NLA",
+    "RGD",
+    "FLA",
+    "NEPA",
+    "HIC",
+    "CUNA",
+    "AWS",
+    "ESPN",
+    "DAZN",
+    "VPN",
+    "ISP"
+  ],
+  "smallWords": [
+    "of",
+    "the",
+    "at",
+    "in",
+    "on",
+    "and",
+    "to",
+    "a",
+    "for",
+    "by"
+  ],
+  "insights": {
+    "meaningfulChangePct": 25,
+    "meaningfulChangeMin": 3000,
+    "largeChargeMultiple": 2.5,
+    "largeChargeMin": 10000,
+    "largeChargeZ": 3.5,
+    "largeChargeMinPeers": 2,
+    "minMonthsForComparison": 2,
+    "maxInsights": 3,
+    "newMerchantMin": 2000,
+    "driverShare": 0.5,
+    "incompleteDayMargin": 3,
+    "incompleteSpendRatio": 0.6
+  }
+}
