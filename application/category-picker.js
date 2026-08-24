@@ -78,6 +78,7 @@ export function createCategoryPicker(ctx) {
       const match = applyAll ? rkey === key : (rec.id || transactionIdentity(rec)) === row.id;
       if (match) { before.push({ rec, prev: rec.categoryOverride || null }); rec.categoryOverride = category; rec.lastChanged = new Date().toISOString(); }
     }
+    state.records = state.records.slice();
     if (applyAll) {
       state.rules = upsertCategoryRule(state.rules, { match: row.raw_description, category }, new Date()).rules;
       await persistRules();
@@ -87,6 +88,7 @@ export function createCategoryPicker(ctx) {
     toast(applyAll ? `Filed every "${place}" as ${category}.` : `Filed as ${category}.`,
       async () => {
         for (const b of before) b.rec.categoryOverride = b.prev;
+        state.records = state.records.slice();
         if (applyAll) { state.rules = beforeRules.map((r) => ({ ...r })); await persistRules(); }
         await persist(); render(); toast('Change undone.');
       });
@@ -102,10 +104,12 @@ export function createCategoryPicker(ctx) {
       if (ids.has(id)) { before.push({ rec, prev: !!rec.reviewDismissed }); rec.reviewDismissed = true; rec.lastChanged = new Date().toISOString(); }
     }
     if (!before.length) return;
+    state.records = state.records.slice();
     await persist(); render();
     const n = before.length;
     toast(`Marked ${n} item${n === 1 ? '' : 's'} as reviewed.`, async () => {
       for (const b of before) b.rec.reviewDismissed = b.prev;
+      state.records = state.records.slice();
       await persist(); render(); toast('Change undone.');
     });
   }

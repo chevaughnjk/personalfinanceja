@@ -54,12 +54,7 @@ function bootUI() {
     for (const kid of kids.flat()) if (kid != null && kid !== false) n.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
     return n;
   };
-  const svgEl = (tag, attrs = {}, ...kids) => {
-    const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, v);
-    for (const kid of kids.flat()) if (kid != null) n.append(kid);
-    return n;
-  };
+
   // Turn a trusted, static icon markup string into a REAL DOM/SVG node so it can
   // be appended as an element child. Passing an icon string straight into el()
   // as a child would create a text node, printing the literal <svg…> markup.
@@ -218,11 +213,6 @@ function bootUI() {
     t.classList.add('show');
     clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), undoFn ? 10000 : 8000);
   };
-  const setBusy = (on, msg) => {
-    const b = $('#busy'); if (!b) return;
-    $('.busy-msg', b).textContent = msg || 'Working…';
-    b.classList.toggle('show', !!on);
-  };
 
   /* ---- theme colours from config ---- */
   function applyThemeColours() {
@@ -234,20 +224,29 @@ function bootUI() {
   /* ---- stable category → colour map (consistent everywhere) ---- */
   const PALETTE = ['#2f6fb0','#3f9d6b','#c98a1b','#a05fb4','#4aa3a3','#c65b7c',
     '#6b8e3d','#b5642e','#5a78c2','#8a8f2f','#3e8fb0','#9a5aa8','#c0603f','#557f9e'];
+  let _colKey = null;
   function buildCategoryColours() {
+    const themeKey = document.documentElement.dataset.theme || 'auto';
+    if (_colKey && _colKey.cfg === state.cfg && _colKey.theme === themeKey) return;
     const map = {};
     (state.cfg.categories || []).forEach((c, i) => { map[c.name] = PALETTE[i % PALETTE.length]; });
     map[FALLBACK()] = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#8a8f99';
     state.catColour = map;
-  }
-  const catColour = (name) => state.catColour[name] || '#8a8f99';
+    _colKey = { cfg: state.cfg, theme: themeKey };
+  }  const catColour = (name) => state.catColour[name] || '#8a8f99';
   const isReview = (name) => name === FALLBACK();
 
   /* ---- recompute rows + all-time summary from records ---- */
-  // Bumped whenever state.rows is rebuilt, so the visibleRows() cache key below
-  // changes and the memo is invalidated. Presentation/perf only.
-  let _rowsVersion = 0;
+  let _rcKey = null;
   function recompute() {
+    if (_rcKey
+      && _rcKey.records === state.records && _rcKey.rules === state.rules
+      && _rcKey.compiled === state.compiled && _rcKey.merchants === state.merchants
+      && _rcKey.brandRules === state.brandRules && _rcKey.resolver === state.resolver
+      && _rcKey.keepUpper === state.keepUpper && _rcKey.smallWords === state.smallWords
+      && _rcKey.cfg === state.cfg) {
+      return;
+    }
     state.rows = buildRows(state.records, state.compiled, {
       keepUpper: state.keepUpper, smallWords: state.smallWords,
       fallback: state.cfg.special.fallback, paymentCategory: state.cfg.special.paymentCategory,
@@ -257,7 +256,11 @@ function bootUI() {
       resolver: state.resolver,   // card-identity door for categorise (grouping still uses merchants)
     });
     state.allSummary = summarise(state.rows, { keepUpper: state.keepUpper, smallWords: state.smallWords, brandRules: state.brandRules, merchants: state.merchants, fallback: state.cfg.special.fallback });
-    _rowsVersion++;
+    _rcKey = {
+      records: state.records, rules: state.rules, compiled: state.compiled, merchants: state.merchants,
+      brandRules: state.brandRules, resolver: state.resolver, keepUpper: state.keepUpper,
+      smallWords: state.smallWords, cfg: state.cfg,
+    };
   }
 
   const allMonths = () => state.allSummary ? state.allSummary.months : [];
@@ -273,13 +276,13 @@ function bootUI() {
   let _rsKey = null, _rsVal = null;
   function resolved() {
     const nowYM = ymToday();
-    if (_rsKey && _rsKey.p === state.period && _rsKey.rv === _rowsVersion
+    if (_rsKey && _rsKey.p === state.period && _rsKey.rw === state.rows
       && _rsKey.br === state.bankRecords && _rsKey.cov === state.coverage
       && _rsKey.ym === nowYM) {
       return _rsVal;
     }
     _rsVal = resolvePeriod(state.period, state.rows, allLedgerMonths(), new Date(), state.coverage);
-    _rsKey = { p: state.period, rv: _rowsVersion, br: state.bankRecords, cov: state.coverage, ym: nowYM };
+    _rsKey = { p: state.period, rw: state.rows, br: state.bankRecords, cov: state.coverage, ym: nowYM };
     // INVARIANT: this object is shared by reference across the ~10 callers in
     // a render. Treat it as READ-ONLY; never mutate a returned period.
     return _rsVal;
@@ -293,10 +296,18 @@ function bootUI() {
     if (!from || !to) return [];
     return recs.filter((r) => { const m = String(r.date || '').slice(0, 7); return m >= from && m <= to; });
   }
+  let _anKey = null, _anVal = null;
   function analysis() {
     const p = resolved();
     if (!p) return null;
-    return analysePeriod(state.rows, p, { keepUpperSet: state.keepUpper, smallWordsSet: state.smallWords, merchantLabelFn, brandRules: state.brandRules, merchants: state.merchants });
+    if (_anKey && _anKey.rows === state.rows && _anKey.p === p
+      && _anKey.ku === state.keepUpper && _anKey.sw === state.smallWords
+      && _anKey.br === state.brandRules && _anKey.me === state.merchants) {
+      return _anVal;
+    }
+    _anVal = analysePeriod(state.rows, p, { keepUpperSet: state.keepUpper, smallWordsSet: state.smallWords, merchantLabelFn, brandRules: state.brandRules, merchants: state.merchants });
+    _anKey = { rows: state.rows, p, ku: state.keepUpper, sw: state.smallWords, br: state.brandRules, me: state.merchants };
+    return _anVal;
   }
 
   /* rows inside the current period (before drill-down filters) */
@@ -312,20 +323,20 @@ function bootUI() {
   // (filter, sort, resolved period and a rows-version bumped on recompute), so
   // it auto-invalidates the instant any of them change - same rows, same order,
   // same counts as before, just not recomputed on every call.
-  let _vrKey = null, _vrVal = null;
+  let _vrKey = null, _vrVal = null, _vrRows = null;
   function visibleRowsSignature() {
     const f = state.filter; const p = state.period;
     return [
       f.search, f.category, f.kind, f.merchant, f.month, f.min, f.max, f.foreignOnly, f.reviewOnly,
       state.sort.key, state.sort.dir,
-      p.type, p.from || '', p.to || '', _rowsVersion,
+      p.type, p.from || '', p.to || '',
     ].join('|');
   }
   function visibleRows() {
     const key = visibleRowsSignature();
-    if (key === _vrKey) return _vrVal;
+    if (key === _vrKey && _vrRows === state.rows) return _vrVal;
     const rows = computeVisibleRows();
-    _vrKey = key; _vrVal = rows;
+    _vrKey = key; _vrVal = rows; _vrRows = state.rows;
     return rows;
   }
   function computeVisibleRows() {
@@ -373,11 +384,6 @@ function bootUI() {
   /* ===================================================================
    * RENDER
    * =================================================================== */
-  // "You see what you have": the destinations that currently hold data. The
-  // Overview (combined view) exists only when BOTH ledgers have data; each
-  // single-ledger tab exists only when its own ledger does. render() and
-  // renderLedgerSwitch both read this, so the tab bar and the dispatch can
-  // never disagree about which views are reachable.
   function availableViews() {
     const v = [];
     if (state.records.length && state.bankRecords.length) v.push('overview');
@@ -386,90 +392,52 @@ function bootUI() {
     return v;
   }
 
+  let _covKey = null;
+  let _viewCache = {}, _epochSnap = null;
+  const _viewScroll = {};
+
   function render() {
     const app = $('#app'); app.innerHTML = '';
     const hasCard = state.records.length > 0;
     const hasBank = state.bankRecords.length > 0;
-
-    // The views that currently hold data, in display order. If the active view
-    // is no longer one of them (e.g. its ledger was cleared), fall back to the
-    // first available so a stale state.view can never leave a blank screen.
     const views = availableViews();
     if (views.length && !views.includes(state.view)) state.view = views[0];
-
-    // Card rows + all-time summary drive the card views AND the shared period
-    // selector's month domain, so build them once up front whenever card data
-    // exists (idempotent). This runs before renderPeriodBar so the selector
-    // sees every card month, whichever tab is active.
     if (state.records.length) { recompute(); buildCategoryColours(); }
-
-    // Fact-based statement coverage over the whole-ledger month domain: for each
-    // calendar month, does the imported card / bank statement actually span the
-    // whole month, only part of it, or is that ledger absent. The shared period
-    // model (resolvePeriod -> latestCompleteMonth -> detectIncompleteMonth) and
-    // the comparison-fairness gate read this instead of guessing completeness
-    // from the shape of spending. Pure and cheap; recomputed each render so it
-    // always reflects the current statements. Card-only and bank-only users
-    // both degrade cleanly (the absent ledger's months are simply 'absent').
-    {
+    if (!_covKey || _covKey.cs !== state._cardStatements || _covKey.bs !== state._bankStatements
+      || _covKey.rows !== state.rows || _covKey.bank !== state.bankRecords) {
       const cardMonthsSet = new Set(state.rows.map((r) => r.month).filter((m) => m && m !== 'unknown'));
       const bankMonthsSet = new Set((state.bankRecords || []).map((r) => String(r.date || '').slice(0, 7)).filter(Boolean));
       state.coverage = buildStatementCoverage(state._cardStatements, state._bankStatements, cardMonthsSet, bankMonthsSet);
+      _covKey = { cs: state._cardStatements, bs: state._bankStatements, rows: state.rows, bank: state.bankRecords };
     }
 
-    // ONE shared, tab-agnostic period selector. It is rendered here, above the
-    // tab content, on EVERY view - not inside any one branch - and reads/writes
-    // the single state.period. Cards, Accounts and Overview all resolve from
-    // that state, so the timeframe on screen is unambiguous and identical
-    // across tabs, and changing it re-renders whichever view is showing with
-    // the new window already applied.
     renderPeriodBar();
-
-    // The ledger switch appears only when there is more than one destination.
-    // Rendered AFTER renderPeriodBar so its tabs drop into the centre slot that
-    // renderPeriodBar just built inside the period bar (desktop shares that one
-    // sticky row); on mobile CSS detaches it to a fixed bottom bar. Order
-    // matters: the period bar is wiped and rebuilt each render, so the slot must
-    // exist before this fills it.
     renderLedgerSwitch(views);
-
-    // Neither ledger has any data yet: the first-run empty state.
-    if (!hasCard && !hasBank) { app.append(renderEmpty()); updateFooter(); return; }
-
-    // Manage Data now renders on EVERY tab (Overview, Cards, Accounts), not
-    // just Cards. It previously sat only in the Cards branch below, so anyone
-    // who booted straight into Accounts or Overview (e.g. bank-only data, per
-    // start()'s data-aware default) never saw "Clear all data", "Remove a
-    // statement" or "Help us recognise more merchants" at all - the opposite
-    // of the "always-visible card" the comment on renderManageData claims.
-    // Built once here, before the per-tab dispatch, and reused across all
-    // three branches so it is never computed three times.
-    const manageDataCard = renderManageData();
-
-    // Data & settings must live INSIDE the tab's own wrapper as its last child,
-    // not as a sibling in the #app dashboard grid. As a sibling it was being
-    // governed by the Cards-tab two-column grid (whose ordering rules assume a
-    // dozen .card children), which floated this single collapsed card into a
-    // narrow top-left column above the hero. Appended into the wrapper it is
-    // simply the final child of that wrapper's own flex/grid flow, so it can
-    // only ever sit at the bottom on every width.
-    if (state.view === 'overview') { const w = renderOverview(); w.append(manageDataCard); app.append(w); updateFooter(); return; }
-    if (state.view === 'accounts') { const w = renderAccounts(); w.append(manageDataCard); app.append(w); updateFooter(); return; }
-
-    // Card ledger.
+    if (!hasCard && !hasBank) { _viewCache = {}; app.append(renderEmpty()); updateFooter(); return; }
+    const epoch = [
+      state.rows, classifiedBank(), state.coverage, resolved(),
+      state._cardStatements, state._bankStatements, state.catColour,
+      state.warnings, state.cardAccounts,
+    ];
+    if (!_epochSnap || _epochSnap.length !== epoch.length || epoch.some((v, i) => v !== _epochSnap[i])) {
+      _viewCache = {};
+      _epochSnap = epoch;
+    }
+    if (state.view === 'overview') {
+      mountView(app, 'overview', '', () => { const w = renderOverview(); w.append(renderManageData()); return [w]; });
+      updateFooter(); return;
+    }
+    if (state.view === 'accounts') {
+      const sig = [state.bankAccount, state.bankFilter.payeeKey, state.bankFilter.payeeLabel, state.bankFilter.search, state.bankFilter.hideInternal, state.bankShowAllTx].join('|');
+      mountView(app, 'accounts', sig, () => { const w = renderAccounts(); w.append(renderManageData()); return [w]; });
+      updateFooter(); return;
+    }
     const a = analysis();
-    // Shared-window empty state: card data exists overall, but none of it falls
-    // in the selected period. Show a plain explanation instead of a $0 hero and
-    // a stack of "No purchases in this period" panels.
-    if (a && a.n_transactions === 0) { app.append(periodEmptyNotice('card transactions', allMonths()), manageDataCard); updateFooter(); return; }
-    app.append(...[
+    if (a && a.n_transactions === 0) { _viewCache = {}; app.append(periodEmptyNotice('card transactions', allMonths()), renderManageData()); updateFooter(); return; }
+    const cardSig = visibleRowsSignature() + '|' + String(state.showAllTx);
+    mountView(app, 'cards', cardSig, () => [
       renderHero(a),
       renderInsightsAndAttention(a),
-      // "How your card is doing" (persona move 2): the debt carrier's and the
-      // full-payer's core question, answered near the top rather than buried in
-      // Data & settings. Self-adapting and self-omitting - a revolver sees a
-      // payoff trajectory, a full-payer a one-line confirmation, and it returns
-      // null (dropped by filter) when no card statements have been read.
       renderCardFitness(),
       renderTrend(a),
       renderCategoryPanel(a),
@@ -478,58 +446,32 @@ function bootUI() {
       renderRecurring(),
       renderRecent(a),
       renderExplorer(a),
-      // manageDataCard removed here: renderSecondary now hosts the manage-data
-      // actions section itself (via manageDataBody), so the Cards tail is ONE
-      // "Data & settings" card, not the former Manage-data + Data-&-settings
-      // pair. manageDataCard is still built and used on the Overview / Accounts
-      // / period-empty branches, where there is no renderSecondary to fold into.
       renderSecondary(a),
     ].filter(Boolean));
     updateFooter();
   }
 
-  /* ---- the one place a ledger view change happens ----
-   * Every entry point that moves between Overview, Cards and Accounts - the tab
-   * buttons in renderLedgerSwitch, the tab keyboard handler, AND the "Open
-   * Cards" / "Open Accounts" routing buttons on the Overview hub - goes through
-   * this single helper, so the same action always produces the same result no
-   * matter which control was used (functional consistency). One place to keep
-   * in sync, not two parallel switch paths (Occam's Razor). A tab switch is a
-   * bigger reset boundary than a drill: it clears EVERY bank facet via
-   * clearBankFilters() (registry-derived, see BANK_FACETS above), not just
-   * bankAccount, so nothing from a prior Accounts visit - a payee filter, an
-   * active search, an expanded transaction list - can resurface combined with
-   * the next visit. It leaves state.view's siblings - the shared period, Cards
-   * filters, search and sort - untouched. */
+
+  function mountView(app, name, sig, build) {
+    const cache = _viewCache[name];
+    if (cache && cache.sig === sig) { for (const n of cache.nodes) app.append(n); return; }
+    const nodes = build();
+    _viewCache[name] = { sig, nodes };
+    for (const n of nodes) app.append(n);
+  }
+
+  /* ---- the one place a ledger view change happens ---- */
   function switchLedgerView(id) {
     if (state.view === id) return;
+    _viewScroll[state.view] = window.scrollY;
     clearBankFilters();
     state.bankShowAllTx = false;
     state.view = id;
     render();
+    window.scrollTo({ top: _viewScroll[id] || 0, left: 0, behavior: 'auto' });
   }
 
-  // The ONE within-app PAYEE drill into the Accounts transaction list, used
-  // from both starting points: the Overview routing cards (a different tab, so
-  // the ledger must switch first) and every Accounts summary card (already on
-  // the tab). switchLedgerView returns early WITHOUT rendering when the view
-  // is already 'accounts', so calling it alone left an in-tab drill with its
-  // filter set but nothing re-rendered or scrolled - the exact reason
-  // accounts-render carried its own copy. Here the state is set first, the
-  // view is switched only when it actually differs, and render() + scroll
-  // always run, so one helper is correct whether the drill starts on Overview
-  // or on Accounts.
-  //
-  // resetBankDrillFacets() (registry-derived) now runs UNCONDITIONALLY, not
-  // only when the tab is changing. This is the exact fix for the "Regular
-  // payments" mobile break: a prior "By account" click had left
-  // state.bankAccount set, and because this drill only cleared it when
-  // switching tabs, clicking a payee drill while ALREADY on Accounts left both
-  // filters active together - a combination narrow enough to return zero rows
-  // and long enough to overflow the header on a phone. drillToAccount, right
-  // below, is this function's exact mirror, so an account drill and a payee
-  // drill are symmetric by construction, not by two independently
-  // hand-written resets.
+
   function drillToAccountsPayee(key, label) {
     resetBankDrillFacets();
     state.bankFilter.payeeKey = key;
@@ -540,13 +482,6 @@ function bootUI() {
     smoothScrollToEl('#acct-tx');
   }
 
-  // The ONE within-app ACCOUNT drill ("By account" in accounts-render.js), the
-  // exact mirror of drillToAccountsPayee above: resetBankDrillFacets() clears
-  // any payee filter (or other bank drill facet) left from an earlier click
-  // before this one applies, so the two drills can never combine into a
-  // filter intersection nobody asked for. Toggles off (back to 'all') on a
-  // repeat click of the same account, matching the previous inline behaviour
-  // accounts-render.js used to implement itself.
   function drillToAccount(account) {
     const turningOff = state.bankAccount === account;
     resetBankDrillFacets();
@@ -555,21 +490,10 @@ function bootUI() {
     render();
     smoothScrollToEl('#acct-tx');
   }
-  /* ---- ledger switch (Cards / Accounts) ----
-   * A two-destination switch rendered into #ledger-switch, shown only when a
-   * bank statement has been imported. Two distinct ledgers, so these read as
-   * tabs, not a segmented control (PRD §3.5). No Overview tab yet - that is
-   * Phase 2, and adding it now would put a combined figure on screen before
-   * transfer exclusion is proven (§6.3 assumption). */
+  /* ---- ledger switch (Cards / Accounts) ---- */
   function renderLedgerSwitch(views) {
     let host = $('#ledger-switch');
     if (!host) {
-      // Normal path: renderPeriodBar builds this slot inside #period-bar (so the
-      // tabs share the period row on desktop, and CSS detaches them to a fixed
-      // bottom bar on mobile), so this fallback only runs when the period bar was
-      // not built - i.e. no data yet. Then the switch has <2 views and is hidden
-      // anyway, so it goes into the sticky chrome (keeping #period-bar truly
-      // :empty so the empty bar stays collapsed), else just above #app.
       host = el('div', { id: 'ledger-switch', class: 'ledger-switch', hidden: '' });
       const stack = $('.topbar-stack');
       const bar = $('#period-bar');
@@ -603,27 +527,7 @@ function bootUI() {
     const TABS = views.map((id) => [id, LABELS[id]]);
     const ids = TABS.map(([id]) => id);
     const tabDomId = (id) => 'ledger-tab-' + id;
-
-    // The single place a tab switch happens. Fix 1: switching tabs clears any
-    // per-account filter chosen on the Accounts tab, so a single-account view
-    // never silently carries into a later visit after switching away and back.
-    // Chesterton's Fence: nothing outside renderAccounts and its own CSV/print
-    // reads state.bankAccount, and Overview ignores it, so no cross-tab
-    // workflow depends on it persisting - the only reason it survived a glance
-    // was that the picker was never reset on a view change. Leaves state.view,
-    // the shared period, filters, search and sort untouched. Delegates to the
-    // shared switchLedgerView so the tabs and the Overview routing buttons run
-    // the identical logic (one path, not two to keep in sync).
     const switchTo = (id) => switchLedgerView(id);
-
-    // Fix 3: a conformant ARIA tab set (Jakob's Law - assistive tech and
-    // keyboard users already expect exactly this from something that looks like
-    // tabs). Automatic activation with a roving tabindex, per the W3C ARIA Tabs
-    // pattern: only the active tab is in the page tab sequence, the others are
-    // reached with the arrow keys; Home/End jump to the ends; focus follows.
-    // render() rebuilds this tablist, so after a switch the newly-active tab is
-    // a fresh node - it is re-focused by its stable id to keep focus on the
-    // tablist.
     const focusTab = (id) => { const b = $('#' + tabDomId(id)); if (b) b.focus(); };
     const activateIndex = (idx) => {
       const id = ids[(idx + ids.length) % ids.length];
@@ -658,46 +562,12 @@ function bootUI() {
       appEl.setAttribute('aria-labelledby', tabDomId(state.view));
     }
 
-    // Phase 2: three destinations - Overview (the hub), Cards, Accounts (D7).
-    // The Overview appears only once bank data exists AND transfer exclusion is
-    // in effect, so its headline figures are trustworthy (§6.3). Tabs switch
-    // distinct sections; they are not a segmented control.
     host.append(el('div', { class: 'ledger-tabs', role: 'tablist', 'aria-label': 'Ledger views' },
       ...TABS.map(([id, label], i) => tab(id, label, i))));
   }
 
-  /* ---- Overview (Phase 2 hub, Phase 3 combined roll-up) ----
-   * The one place that reads money across BOTH ledgers. Phase 3 makes its
-   * headline a genuine cross-ledger roll-up (D12, PRD §9): income, the real
-   * external spending (bank external out + card purchases, double-count-safe),
-   * and net cash flow - with the cash position and the card balance owed shown
-   * side by side, never netted into a net-worth figure. It still summarises and
-   * routes only: no category breakdown, merchant table or card insight renders
-   * here (D8); those stay in Cards. Every figure comes from analyseRollup /
-   * analyseCombinedOverview, so the hub and the sub-views can never disagree.
-   * The roll-up is deliberately NOT a fourth tab: the Overview IS the combined
-   * view its job describes (§6.3), and a fourth destination would violate the
-   * three-destination rule (D7, Hick's Law). */
+  /* ---- Overview (Phase 2 hub, Phase 3 combined roll-up) ---- */
 
-  // Bank-appropriate "What's new or unusual" insights for the Overview tab -
-  // the replacement for the reverted hero-pill (heroComparePill/
-  // robustMonthlyBaseline). Built the same way Cards' buildInsights is (a
-  // capped list of plain-language, clickable sentences), but populated with
-  // insight types that genuinely suit bank/cash-flow data rather than the
-  // card-spending "X% more/less than last period" mechanic that was reverted.
-  // recs is the period-scoped classified bank record set renderOverview
-  // already computed; roll is the SAME analyseRollup result the hero reads;
-  // verdict is the SAME overviewVerdict(roll) result the hero-verdict
-  // sub-headline already reads - reused here, never recomputed a second time.
-  // Thin wrapper around the shared buildBankAppropriateInsights (reporting.js):
-  // supplies the two things genuinely different for Overview - the
-  // cross-ledger previous-income comparison via analyseRollup, and the SAME
-  // verdict object renderOverview() already computed for the hero-verdict
-  // sub-headline, never recomputed here - and delegates the rest (the
-  // large-payment check, the new-payee check, the missing-months check, every
-  // config threshold) to the one shared implementation Accounts' own
-  // buildBankInsights (accounts-render.js) also calls, so the two tabs can
-  // never again quietly drift into different thresholds or wording.
   function buildOverviewInsights(recs, roll, verdict) {
     const p = resolved();
     const recsAll = classifiedBank();
@@ -708,13 +578,6 @@ function bootUI() {
     }
     return buildBankAppropriateInsights({
       recsAll, period: p, cfg: state.cfg,
-      // Class 1 (same-screen redundancy): the Overview HERO already shows this
-      // exact cash-flow-direction verdict as its sub-headline, so passing it
-      // through here made the insight list repeat the hero verbatim (e.g. "More
-      // went out than came in" printed twice on one screen). Passing null
-      // suppresses the verdict insight (#4) on Overview ONLY. Accounts keeps
-      // passing its own verdict, because there it is NOT in the hero and the
-      // insight is its only surfacing - so this is not a duplicate there.
       currentIncome: roll.income, prevIncome, verdict: null, coverage: state.coverage,
       bankMoney, prevLabel, monthLabel, bankMonthsList,
       onNavigate: () => switchLedgerView('accounts'),
@@ -978,8 +841,8 @@ function bootUI() {
       chart.append(bars);
       tsec.append(chart);
       tsec.append(renderExplainer(el, roll.hasCard
-        ? 'Bars show money leaving your accounts plus card purchases. Your inter-account transfers and payments are excluded'
-        : 'Bars show money left each month (excluding your inter-account transfers excluded).', { label: 'How this chart is worked out' }));
+        ? 'Bars show money leaving your accounts plus card purchases. Your inter-account transfers and payments are excluded.'
+        : 'Bars show money left each month (excluding your inter-account transfers).', { label: 'How this chart is worked out' }));
       wrap.append(tsec);
     }
 
