@@ -56,9 +56,12 @@ const server = http.createServer((req, res) => {
     resolved = path.normalize(path.join(root, reqPath));
   }
 
-  const allowedRoot = reqPath.startsWith('/application/') || reqPath.startsWith('/settings/') || reqPath.startsWith('/third-party/')
-    ? projectRoot
-    : root;
+  const allowedRoot =
+    reqPath.startsWith('/application/') ||
+    reqPath.startsWith('/settings/') ||
+    reqPath.startsWith('/third-party/')
+      ? projectRoot
+      : root;
 
   if (!resolved.startsWith(allowedRoot)) {
     res.writeHead(403);
@@ -71,13 +74,17 @@ const server = http.createServer((req, res) => {
     return;
   }
   const ext = path.extname(resolved).toLowerCase();
-  res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+  res.writeHead(200, {
+    'Content-Type': MIME[ext] || 'application/octet-stream',
+  });
   createReadStream(resolved).pipe(res);
 });
 
 server.on('error', (err) => {
   if (err && err.code === 'EADDRINUSE') {
-    console.error(`[serve] Port ${port} is already in use. Close whatever is using it, or set PORT to another number.`);
+    console.error(
+      `[serve] Port ${port} is already in use. Close whatever is using it, or set PORT to another number.`
+    );
   } else {
     console.error('[serve] Could not start the server:', err && err.message ? err.message : err);
   }
@@ -93,9 +100,11 @@ server.listen(port, '127.0.0.1', () => {
 
 function openBrowser(url) {
   const cmd =
-    process.platform === 'win32' ? `start "" "${url}"`
-    : process.platform === 'darwin' ? `open "${url}"`
-    : `xdg-open "${url}"`;
+    process.platform === 'win32'
+      ? `start "" "${url}"`
+      : process.platform === 'darwin'
+        ? `open "${url}"`
+        : `xdg-open "${url}"`;
   // Best-effort only: if there is no desktop to open a browser on (a
   // container, a headless CI machine), the server keeps running regardless.
   exec(cmd, () => {});

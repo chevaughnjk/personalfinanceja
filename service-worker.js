@@ -22,30 +22,91 @@
  * root location.
  */
 
-const VERSION = 'personalfinanceja-v1.2';
+const VERSION = 'pfa-v0.1';
 
-// CODE: the page and every module it loads. Kept as one list so isCode() below
-// can recognise them and serve them network-first. These are the exact paths
-// the browser requests, matching the import statements in index.html and app.js.
 const CODE = [
   './',
   './index.html',
+
+  // Stylesheets - actively edited, so CODE (network-first), never ASSETS.
   './interface/styles.css',
+  './interface/glass.css',
+  './interface/treemap.css',
+  './interface/income-chart.css',
+  './interface/flow-chart.css',
+
+  // Application entry point
   './application/app.js',
-  './application/shared-helpers.js',
-  './application/read-statements.js',
-  './application/categorise.js',
-  './application/storage.js',
-  './application/reporting.js',
-  './application/accounts-render.js',
-  './application/category-picker.js',
-  './application/manage-data.js',
-  './application/data-export.js',
-  './application/cards-render.js',
+
+  // application/core/
+  './application/core/icons.js',
+  './application/core/shared-helpers.js',
+  './application/core/storage.js',
+
+  // application/statements/
+  './application/statements/categorise.js',
+  './application/statements/merchant-resolver.js',
+  './application/statements/read-statements.js',
+
+  // application/analysis/ (the pure, corpus-proven modules)
+  './application/analysis/available-now.js',
+  './application/analysis/bank-analysis.js',
+  './application/analysis/category-intentions.js',
+  './application/analysis/commitment-income.js',
+  './application/analysis/committed-flexible.js',
+  './application/analysis/custom-categories.js',
+  './application/analysis/forecast-accuracy.js',
+  './application/analysis/forecast-chart-model.js',
+  './application/analysis/forecast.js',
+  './application/analysis/goal-migrate.js',
+  './application/analysis/goal-progress-ctx.js',
+  './application/analysis/goals.js',
+  './application/analysis/position.js',
+  './application/analysis/proven-models.js',
+  './application/analysis/reporting.js',
+  './application/analysis/spend-breakdown.js',
+  './application/analysis/spendable-categories.js',
+  './application/analysis/tag-totals.js',
+  './application/analysis/transaction-splits.js',
+  './application/analysis/treemap-layout.js',
+
+  // application/ui/ (render factories)
+  './application/ui/accounts-render.js',
+  './application/ui/activity-render.js',
+  './application/ui/ahead-render.js',
+  './application/ui/available-now-preview.js',
+  './application/ui/cards-render.js',
+  './application/ui/category-picker.js',
+  './application/ui/chart-helpers.js',
+  './application/ui/forecast-chart-render.js',
+  './application/ui/intentions-section.js',
+  './application/ui/manage-data.js',
+  './application/ui/overview-render.js',
+  './application/ui/position-render.js',
+  './application/ui/treemap-render.js',
+  './application/ui/income-chart-render.js',
+  './application/ui/flow-chart-render.js',
+
+  // application/output/
+  './application/output/csv-export.js',
+  './application/output/data-export.js',
+  './application/output/history-codec.js',
+  './application/output/report-render.js',
+
+  // application/sample-data/ - dynamically imported ONLY on localhost/dev
+  // hosts (see index.html's own hostname guard), but real files that
+  // should still be offline-available in that context.
+  './application/sample-data/mock-data.js',
+  './application/sample-data/mock-generator.js',
+  './application/sample-data/mock-personas.js',
+
+  // settings/ - config-driven category rules and merchant intelligence
   './settings/category-rules.js',
   './settings/merchant-intelligence.js',
   './settings/config.json',
   './settings/jamaica-merchants.json',
+  './settings/user-rules.seed.json',
+  './settings/exchange-rates.json',
 ];
 
 // STATIC ASSETS: served cache-first. Every icon the manifest and the page
@@ -76,25 +137,36 @@ function isCode(req, url) {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(VERSION);
-    await Promise.all(SHELL.map(async (url) => {
-      try {
-        const res = await fetch(url, { cache: 'reload' });
-        if (res && res.ok) await cache.put(url, res.clone());
-        else console.warn(`Service worker: precache skipped for ${url} (HTTP ${res ? res.status : 'no response'}).`);
-      } catch (err) { console.warn(`Service worker: precache failed for ${url}.`, err); }
-    }));
-    self.skipWaiting();
-  })());
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(VERSION);
+      await Promise.all(
+        SHELL.map(async (url) => {
+          try {
+            const res = await fetch(url, { cache: 'reload' });
+            if (res && res.ok) await cache.put(url, res.clone());
+            else
+              console.warn(
+                `Service worker: precache skipped for ${url} (HTTP ${res ? res.status : 'no response'}).`
+              );
+          } catch (err) {
+            console.warn(`Service worker: precache failed for ${url}.`, err);
+          }
+        })
+      );
+      self.skipWaiting();
+    })()
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)));
-    await self.clients.claim();
-  })());
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })()
+  );
 });
 
 self.addEventListener('fetch', (event) => {
@@ -103,48 +175,57 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // never touch cross-origin
 
-  event.respondWith((async () => {
-    const cache = await caches.open(VERSION);
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(VERSION);
 
-    if (isCode(req, url)) {
-      // Network-first for code: show edits immediately when online, fall back
-      // to the cached copy when offline. A navigation with no network and no
-      // cached page falls back to the cached index.html so the app still opens.
+      if (isCode(req, url)) {
+        // Network-first for code: show edits immediately when online, fall back
+        // to the cached copy when offline. A navigation with no network and no
+        // cached page falls back to the cached index.html so the app still opens.
+        try {
+          const fresh = await fetch(req);
+          if (fresh && fresh.ok) {
+            await cache.put(req, fresh.clone());
+            return fresh;
+          }
+          const cached = await cache.match(req);
+          if (cached) return cached;
+          if (req.mode === 'navigate') {
+            const shell = await cache.match('./index.html');
+            if (shell) return shell;
+          }
+          return fresh; // let the real (non-ok) response through if nothing cached
+        } catch {
+          const cached = await cache.match(req);
+          if (cached) return cached;
+          if (req.mode === 'navigate') {
+            const shell = await cache.match('./index.html');
+            if (shell) return shell;
+          }
+          return new Response('Offline and this resource is not cached.', {
+            status: 503,
+            statusText: 'Offline',
+            headers: { 'Content-Type': 'text/plain' },
+          });
+        }
+      }
+
+      // Cache-first for static assets: instant and offline-safe. On a miss, fetch
+      // once and store it for next time.
+      const cached = await cache.match(req);
+      if (cached) return cached;
       try {
         const fresh = await fetch(req);
-        if (fresh && fresh.ok) { await cache.put(req, fresh.clone()); return fresh; }
-        const cached = await cache.match(req);
-        if (cached) return cached;
-        if (req.mode === 'navigate') {
-          const shell = await cache.match('./index.html');
-          if (shell) return shell;
-        }
-        return fresh; // let the real (non-ok) response through if nothing cached
+        if (fresh && fresh.ok) await cache.put(req, fresh.clone());
+        return fresh;
       } catch {
-        const cached = await cache.match(req);
-        if (cached) return cached;
-        if (req.mode === 'navigate') {
-          const shell = await cache.match('./index.html');
-          if (shell) return shell;
-        }
-        return new Response('Offline and this resource is not cached.', {
-          status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/plain' },
+        return new Response('Offline and this asset is not cached.', {
+          status: 503,
+          statusText: 'Offline',
+          headers: { 'Content-Type': 'text/plain' },
         });
       }
-    }
-
-    // Cache-first for static assets: instant and offline-safe. On a miss, fetch
-    // once and store it for next time.
-    const cached = await cache.match(req);
-    if (cached) return cached;
-    try {
-      const fresh = await fetch(req);
-      if (fresh && fresh.ok) await cache.put(req, fresh.clone());
-      return fresh;
-    } catch {
-      return new Response('Offline and this asset is not cached.', {
-        status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/plain' },
-      });
-    }
-  })());
+    })()
+  );
 });

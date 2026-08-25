@@ -3,9 +3,25 @@
   "version": 1,
   "exportedAt": "2026-01-01T00:00:00.000Z",
   "rules": [
-    { "match": "Example Merchant One", "category": "Home & Services", "updatedAt": "2026-01-01T00:00:00.000Z" },
-    { "match": "Example Club", "category": "Home & Services", "updatedAt": "2026-01-01T00:00:00.000Z" },
-    { "match": "Example Store", "category": "Retail & Department", "updatedAt": "2026-01-01T00:00:00.000Z" },
-    { "match": "Example Store Ltd", "category": "Retail & Department", "updatedAt": "2026-01-01T00:00:00.000Z" }
+    {
+      "match": "Example Merchant One",
+      "category": "Home & Services",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "match": "Example Club",
+      "category": "Home & Services",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "match": "Example Store",
+      "category": "Retail & Department",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "match": "Example Store Ltd",
+      "category": "Retail & Department",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
   ]
 }

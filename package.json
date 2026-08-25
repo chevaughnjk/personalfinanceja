@@ -12,16 +12,20 @@
     "vendor": "node developer-tools/copy-vendor.js",
     "web": "node developer-tools/serve.js",
     "start": "electron .",
-    "test": "node --test tests/*.test.mjs",
-    "build": "electron-builder"
+    "test": "node --test tests/*_proof.mjs",
+    "build": "electron-builder",
+    "lint": "eslint --config helpers/eslint.config.js"
   },
   "dependencies": {
     "chokidar": "^3.6.0",
     "pdfjs-dist": "^4.6.82"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "electron": "^31.3.1",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0"
   },
   "allowScripts": {
     "electron": true
@@ -38,9 +42,20 @@
       "desktop-app/**",
       "third-party/**"
     ],
-    "directories": { "output": "dist" },
-    "win": { "target": "nsis", "icon": "interface/icons/icon-512.png" },
-    "mac": { "target": "dmg", "icon": "interface/icons/icon-512.png" },
-    "linux": { "target": "AppImage", "icon": "interface/icons/icon-512.png" }
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "interface/icons/icon-512.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "interface/icons/icon-512.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "interface/icons/icon-512.png"
+    }
   }
 }

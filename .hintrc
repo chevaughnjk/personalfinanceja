@@ -1,0 +1,14 @@
+{
+  "extends": [
+    "development"
+  ],
+  "browserslist": [
+    "defaults",
+    "not ie 11",
+    "not and_ff <= 153",
+    "not firefox <= 153"
+  ],
+  "hints": {
+    "no-inline-styles": "off"
+  }
+}

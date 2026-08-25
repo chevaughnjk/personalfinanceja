@@ -33,10 +33,7 @@
     "fallback": "Uncategorised",
     "paymentCategory": "Card Payment",
     "refundCategory": "Refund / Reversal",
-    "feeCategories": [
-      "Fees & Interest",
-      "Government & Tax"
-    ]
+    "feeCategories": ["Fees & Interest", "Government & Tax"]
   },
   "disclosure": "This app is optimised for Jamaican statement data. Some merchant classifications come from a shared Jamaica focused knowledge base and are refined by your own corrections, which always take priority.",
   "merchants": {
@@ -77,6 +74,24 @@
         "note": "Payroll ACH narratives commonly embed the pay-period month (a documented Nacha PAYROLL-description convention, not specific to any one employer). Strips it so recurring salary deposits from the same employer group under one counterparty across every pay period instead of splitting into one group per month."
       },
       {
+        "pattern": "\\bSalary,\\s*Payroll\\b\\s*$",
+        "flags": "i",
+        "replacement": "Salary",
+        "note": "The no-month variant of the Nacha PAYROLL convention: a narrative ending 'Salary, Payroll' (with no pay-period month between them, so the month-stripping rule above does not fire) carries a redundant trailing ', Payroll' descriptor after the salary label. Collapses it to a single 'Salary' so the employer's salary deposits read cleanly and group as one counterparty, matching the month-embedded variant's own result."
+      },
+      {
+        "pattern": "(Salary|Payroll)\\w*.*?Payroll\\s*$",
+        "flags": "i",
+        "replacement": "Salary",
+        "note": "Some payroll deposits from the same employer carry an inline pay-period reference that varies month to month (for example 'Salary1 Oc, Payroll' or 'Payroll Ma, Payroll'), which the earlier fixed-shape rules do not catch. Left alone, each variant becomes its own counterparty and one salary stream splits into several, so those months read as missed deposits when the salary genuinely arrived. Collapses any salary/payroll label followed by trailing pay-period text and a closing 'Payroll' back to a single 'Salary', so every pay period groups under one counterparty. End-anchored, so a plain '...Salary' with no trailing 'Payroll' is never touched."
+      },
+      {
+        "pattern": "(Salary|Payroll)\\w*.*?Payroll\\s*$",
+        "flags": "i",
+        "replacement": "Salary",
+        "note": "Some payroll deposits from the same employer carry an inline pay-period reference that varies month to month (for example 'Salary1 Oc, Payroll' or 'Payroll Ma, Payroll'), which the earlier fixed-shape rules do not catch. Left alone, each variant becomes its own counterparty and one salary stream splits into several, so those months read as missed deposits when the salary genuinely arrived. Collapses any salary/payroll label followed by trailing pay-period text and a closing 'Payroll' back to a single 'Salary', so every pay period groups under one counterparty. End-anchored, so a plain '...Salary' with no trailing 'Payroll' is never touched."
+      },
+      {
         "pattern": "\\s+(Citibank(\\s*N\\.?A\\.?)?|JPMorgan\\s*Chase(\\s*Bank)?(\\s*N\\.?A\\.?)?|Chase\\s*Bank|Bank\\s*of\\s*New\\s*York\\s*Mellon|BNY\\s*Mellon|HSBC(\\s*Bank)?(\\s*USA)?|Barclays(\\s*Bank)?|Standard\\s*Chartered(\\s*Bank)?|Deutsche\\s*Bank(\\s*Trust)?|BNP\\s*Paribas|Wells\\s*Fargo(\\s*Bank)?|Bank\\s*of\\s*America)\\s*$",
         "flags": "i",
         "replacement": "",
@@ -110,10 +125,23 @@
       "cash-withdrawal": "Cash withdrawals",
       "cash-deposit": "Cash deposits",
       "household": "Support to household",
+      "refund": "Refunds & reversals",
       "internal": "Between your own accounts",
       "other": "Other movements"
     },
-    "order": ["income", "payment", "bill", "fees", "tax", "cash-withdrawal", "cash-deposit", "household", "internal", "other"],
+    "order": [
+      "income",
+      "payment",
+      "bill",
+      "fees",
+      "tax",
+      "cash-withdrawal",
+      "cash-deposit",
+      "household",
+      "refund",
+      "internal",
+      "other"
+    ],
     "colours": {
       "income": "#3f9d6b",
       "payment": "#2f6fb0",
@@ -123,6 +151,7 @@
       "cash-withdrawal": "#4aa3a3",
       "cash-deposit": "#6b8e3d",
       "household": "#9a5aa8",
+      "refund": "#3f9d6b",
       "internal": "#8a8f99",
       "other": "#557f9e"
     },
@@ -670,12 +699,7 @@
       "sector": "Cash",
       "ownership": "personal",
       "patterns": {
-        "universal": [
-          "\\batm\\b",
-          "cash\\s*advance",
-          "cash\\s*withdrawal",
-          "withdrawal"
-        ]
+        "universal": ["\\batm\\b", "cash\\s*advance", "cash\\s*withdrawal", "withdrawal"]
       }
     },
     {
@@ -684,15 +708,7 @@
       "sector": "Entertainment - Gaming",
       "ownership": "personal",
       "patterns": {
-        "universal": [
-          "betting",
-          "\\blotto\\b",
-          "wager",
-          "jackpot",
-          "betway",
-          "bingo",
-          "poker"
-        ]
+        "universal": ["betting", "\\blotto\\b", "wager", "jackpot", "betway", "bingo", "poker"]
       }
     },
     {
@@ -716,7 +732,8 @@
           "variety",
           "\\bstore\\b"
         ]
-      }    },
+      }
+    },
     {
       "name": "Home & Services",
       "description": "Household and personal services",
@@ -824,18 +841,7 @@
     "VPN",
     "ISP"
   ],
-  "smallWords": [
-    "of",
-    "the",
-    "at",
-    "in",
-    "on",
-    "and",
-    "to",
-    "a",
-    "for",
-    "by"
-  ],
+  "smallWords": ["of", "the", "at", "in", "on", "and", "to", "a", "for", "by"],
   "insights": {
     "meaningfulChangePct": 25,
     "meaningfulChangeMin": 3000,
@@ -848,6 +854,23 @@
     "newMerchantMin": 2000,
     "driverShare": 0.5,
     "incompleteDayMargin": 3,
-    "incompleteSpendRatio": 0.6
+    "incompleteSpendRatio": 0.6,
+    "minPaymentTrapRatio": 1.15,
+    "categorySpikeZ": 3.5,
+    "categorySpikeMin": 10000,
+    "categorySpikeMinMonths": 3,
+    "paceMinMonths": 3,
+    "paceThreshold": 1.5,
+    "paceMin": 5000
+  },
+  "ahead": {
+    "minMonthsForForecast": 2,
+    "horizonDays": 21,
+    "minMonths": 3,
+    "tolerance": 0.15,
+    "maxGapMonths": 2,
+    "steadySpreadDays": 6,
+    "lateGraceDays": 5,
+    "statementToleranceDays": 4
   }
 }

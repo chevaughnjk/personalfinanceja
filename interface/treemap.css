@@ -1,0 +1,199 @@
+/* =====================================================================
+   treemap.css - category spending map.
+   Loaded after glass.css. Screen-only. Tile colours come from catColour,
+   with any collision between categories present in the SAME render
+   resolved by treemap-render.js before this fill ever reaches an element.
+
+   Rectangles are drawn in a decorative SVG layer. Names, amounts and trend
+   markers are real HTML, positioned by percentage over that SVG, so text
+   stays a genuine, legible CSS pixel size regardless of how large or small
+   the picture itself renders.
+
+   Text tiering (full name / wrapped name / short form / colour-only) is
+   decided in JavaScript from each tile's REAL measured pixel size and REAL
+   measured text width - this file only supplies the base appearance; it
+   makes no size-based content decisions of its own.
+   ===================================================================== */
+
+@media screen {
+  .tm-panel {
+    min-width: 0;
+  }
+
+  .tm-wrap {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    margin: var(--s3) 0 var(--s2);
+    border-radius: 10px;
+    aspect-ratio: 1000 / 560;
+    max-height: 520px;
+  }
+
+  @media (max-width: 639px) {
+    /* Taller ratio on narrow screens: gives small tiles more relative
+       vertical room once width is already constrained. */
+    .tm-wrap {
+      aspect-ratio: 1000 / 700;
+      max-height: 460px;
+    }
+  }
+
+  .tm-svg,
+  .tm-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tm-overlay {
+    pointer-events: none;
+    /* isolation:isolate forces a fresh stacking context whose children can
+       never paint above content outside .tm-wrap, no matter what z-index a
+       tile carries - a structural guarantee that the treemap stays in the
+       content layer, not a per-element z-index that has to be kept in sync. */
+    isolation: isolate;
+    z-index: 0;
+  }
+
+  /*
+   * One complete rectangle represents one category. The quiet border
+   * separates neighbouring categories without creating an internal grid.
+   */
+  .tm-rect {
+    stroke: rgba(0, 0, 0, 0.16);
+    stroke-width: 1.25;
+    vector-effect: non-scaling-stroke;
+    shape-rendering: geometricPrecision;
+  }
+
+  [data-theme='light'] .tm-rect {
+    stroke: rgba(255, 255, 255, 0.42);
+  }
+
+  @media (prefers-color-scheme: light) {
+    [data-theme='auto'] .tm-rect {
+      stroke: rgba(255, 255, 255, 0.42);
+    }
+  }
+
+  /*
+   * Each tile is a real, positioned HTML element (button when clickable,
+   * div otherwise), sized by percentage to match its rectangle exactly.
+   * Uniform padding on every side - the trend marker's own space is
+   * reserved by the LAYOUT LOGIC (checking against availableWidth minus a
+   * gutter), never by asymmetric CSS padding baked in regardless of
+   * whether a marker actually shows on a given tile.
+   */
+  .tm-tile {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 8px;
+    pointer-events: all;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    margin: 0;
+    font: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .tm-tile.is-interactive {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .tm-tile.is-interactive:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  [data-theme='light'] .tm-tile.is-interactive:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  /*
+   * The focus outline is drawn with a box-shadow rather than lifting the
+   * tile with z-index. A z-index here created a stacking context that could
+   * rise over sibling components (the Export menu rendered BEHIND the
+   * treemap - a real, observed bug). The treemap is CONTENT and must always
+   * sit below the app's true overlay layer (menus, toasts, modals); it may
+   * never introduce a z-index that competes with them. inset box-shadow
+   * gives the same visible accent border without any stacking change at all.
+   */
+  .tm-tile.is-interactive:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 3px var(--accent);
+  }
+  .tm-label,
+  .tm-value {
+    display: block;
+    width: 100%;
+    -webkit-user-select: none;
+    user-select: none;
+    /* Defence in depth only - the JS measurement is the real guarantee text
+       fits. If an assumption is ever wrong, overflow clips cleanly rather
+       than visibly spilling past the tile. */
+    overflow: hidden;
+  }
+
+  .tm-label {
+    font-size: 13px;
+    font-weight: 680;
+    letter-spacing: -0.2px;
+    line-height: 15px;
+    /* JS sets white-space per tile (nowrap for a one-line fit, normal for a
+       two-line wrap) and guarantees the chosen lines fit the live element
+       before committing them, so no clamp or ellipsis backstop is needed -
+       a label is only ever set to content that has already been measured to
+       fit. */
+  }
+
+  .tm-value {
+    display: none;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
+    /* nowrap + ellipsis is coherent here (single line), unlike on .tm-label -
+       so the ellipsis defence genuinely works for the amount. */
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /*
+   * Trend marker: shape (point-up vs point-down) is the primary signal,
+   * colour is secondary - never colour alone. Hidden by default; shown only
+   * when the layout logic determines there is genuine room for it without
+   * displacing the category name.
+   */
+  .tm-trend {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 0;
+    height: 0;
+  }
+
+  .tm-trend.tone-watch {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 8px solid var(--warn);
+  }
+
+  .tm-trend.tone-good {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 8px solid var(--good);
+  }
+
+  .tm-help {
+    margin-bottom: 0;
+  }
+}

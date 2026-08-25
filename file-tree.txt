@@ -1,57 +1,135 @@
-pfa/
-├── .git/
-├── .gitignore
-├── favicon.ico
-├── file-tree.txt
-├── index.html
-├── package-lock.json
-├── package.json
-├── README.md
-├── service-worker.js
-├── application/
-│   ├── accounts-render.js
-│   ├── app.js
-│   ├── cards-render.js
-│   ├── categorise.js
-│   ├── category-picker.js
-│   ├── data-export.js
-│   ├── manage-data.js
-│   ├── read-statements.js
-│   ├── reporting.js
-│   ├── shared-helpers.js
-│   └── storage.js
-├── desktop-app/
-│   ├── electron-main.cjs
-│   └── electron-preload.cjs
-├── developer-tools/
-│   ├── copy-vendor.js
-│   └── serve.js
-├── interface/
-│   ├── icons/
-│   │   ├── apple-touch-icon.png
-│   │   ├── icon-192.png
-│   │   ├── icon-512.png
-│   │   └── icon-maskable-512.png
-│   ├── manifest.json
-│   └── styles.css
-├── launcher/
-│   ├── Launch.cmd
-│   ├── launch.ps1
-│   └── logs/
-│       ├── crash-20260823-125518.log
-│       ├── launcher-20260823-125514.log
-│       ├── launcher-20260823-131911.log
-│       ├── web-20260823-123238.log
-│       └── web-20260823-131918.log
-├── node_modules/
-├── settings/
-│   ├── category-rules.js
-│   ├── config.json
-│   ├── jamaica-merchants.json
-│   ├── merchant-intelligence.js
-│   └── user-rules.seed.json
-└── third-party/
-    ├── README.md
-    ├── pdf.min.mjs
-    ├── pdf.worker.min.mjs
-    └── pdf.worker.min.txt
+|-- .github
+|   |-- workflows
+|   |   |-- update-fx.yml  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\.github\workflows\update-fx.yml
+|-- .gitignore  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\.gitignore
+|-- .vscode
+|   |-- launch.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\.vscode\launch.json
+|-- application
+|   |-- analysis
+|   |   |-- available-now.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\available-now.js
+|   |   |-- bank-analysis.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\bank-analysis.js
+|   |   |-- category-intentions.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\category-intentions.js
+|   |   |-- commitment-income.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\commitment-income.js
+|   |   |-- committed-flexible.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\committed-flexible.js
+|   |   |-- custom-categories.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\custom-categories.js
+|   |   |-- forecast-accuracy.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\forecast-accuracy.js
+|   |   |-- forecast-chart-model.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\forecast-chart-model.js
+|   |   |-- forecast.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\forecast.js
+|   |   |-- goal-migrate.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\goal-migrate.js
+|   |   |-- goal-progress-ctx.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\goal-progress-ctx.js
+|   |   |-- goals.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\goals.js
+|   |   |-- position.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\position.js
+|   |   |-- proven-models.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\proven-models.js
+|   |   |-- reporting.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\reporting.js
+|   |   |-- spend-breakdown.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\spend-breakdown.js
+|   |   |-- spendable-categories.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\spendable-categories.js
+|   |   |-- tag-totals.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\tag-totals.js
+|   |   |-- transaction-splits.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\transaction-splits.js
+|   |   |-- treemap-layout.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\analysis\treemap-layout.js
+|   |-- app.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\app.js
+|   |-- core
+|   |   |-- icons.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\core\icons.js
+|   |   |-- shared-helpers.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\core\shared-helpers.js
+|   |   |-- storage.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\core\storage.js
+|   |-- output
+|   |   |-- csv-export.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\output\csv-export.js
+|   |   |-- data-export.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\output\data-export.js
+|   |   |-- history-codec.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\output\history-codec.js
+|   |   |-- report-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\output\report-render.js
+|   |-- sample-data
+|   |   |-- mock-data.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\sample-data\mock-data.js
+|   |   |-- mock-generator.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\sample-data\mock-generator.js
+|   |   |-- mock-personas.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\sample-data\mock-personas.js
+|   |-- statements
+|   |   |-- categorise.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\statements\categorise.js
+|   |   |-- merchant-resolver.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\statements\merchant-resolver.js
+|   |   |-- read-statements.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\statements\read-statements.js
+|   |-- ui
+|   |   |-- accounts-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\accounts-render.js
+|   |   |-- activity-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\activity-render.js
+|   |   |-- ahead-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\ahead-render.js
+|   |   |-- available-now-preview.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\available-now-preview.js
+|   |   |-- cards-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\cards-render.js
+|   |   |-- category-picker.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\category-picker.js
+|   |   |-- chart-helpers.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\chart-helpers.js
+|   |   |-- flow-chart-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\flow-chart-render.js
+|   |   |-- forecast-chart-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\forecast-chart-render.js
+|   |   |-- income-chart-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\income-chart-render.js
+|   |   |-- manage-data.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\manage-data.js
+|   |   |-- overview-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\overview-render.js
+|   |   |-- position-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\position-render.js
+|   |   |-- treemap-render.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\application\ui\treemap-render.js
+|-- desktop-app
+|   |-- electron-main.cjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\desktop-app\electron-main.cjs
+|   |-- electron-preload.cjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\desktop-app\electron-preload.cjs
+|-- developer-tools
+|   |-- copy-vendor.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\developer-tools\copy-vendor.js
+|   |-- serve.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\developer-tools\serve.js
+|-- file-tree.txt  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\file-tree.txt
+|-- helpers
+|   |-- .prettierrc  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\helpers\.prettierrc
+|   |-- eslint.config.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\helpers\eslint.config.js
+|-- index.html  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\index.html
+|-- interface
+|   |-- archive
+|   |   |-- treemap.css  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\archive\treemap.css
+|   |-- flow-chart.css  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\flow-chart.css
+|   |-- glass.css  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\glass.css
+|   |-- icons
+|   |   |-- apple-touch-icon.png  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\icons\apple-touch-icon.png
+|   |   |-- icon-192.png  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\icons\icon-192.png
+|   |   |-- icon-512.png  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\icons\icon-512.png
+|   |   |-- icon-maskable-512.png  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\icons\icon-maskable-512.png
+|   |-- income-chart.css  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\income-chart.css
+|   |-- manifest.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\manifest.json
+|   |-- styles.css  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\styles.css
+|   |-- treemap.css  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\interface\treemap.css
+|-- launcher
+|   |-- Launch.cmd  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\Launch.cmd
+|   |-- launch.ps1  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\launch.ps1
+|   |-- logs
+|   |   |-- crash-20260823-125518.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\crash-20260823-125518.log
+|   |   |-- launcher-20260823-125514.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\launcher-20260823-125514.log
+|   |   |-- launcher-20260823-131911.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\launcher-20260823-131911.log
+|   |   |-- launcher-20260824-084920.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\launcher-20260824-084920.log
+|   |   |-- launcher-20260825-082933.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\launcher-20260825-082933.log
+|   |   |-- web-20260823-123238.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\web-20260823-123238.log
+|   |   |-- web-20260823-131918.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\web-20260823-131918.log
+|   |   |-- web-20260824-085114.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\web-20260824-085114.log
+|   |   |-- web-20260825-083021.log  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\launcher\logs\web-20260825-083021.log
+|-- package-lock.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\package-lock.json
+|-- package.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\package.json
+|-- README.md  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\README.md
+|-- service-worker.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\service-worker.js
+|-- settings
+|   |-- category-rules.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\settings\category-rules.js
+|   |-- config.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\settings\config.json
+|   |-- exchange-rates.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\settings\exchange-rates.json
+|   |-- jamaica-merchants.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\settings\jamaica-merchants.json
+|   |-- merchant-intelligence.js  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\settings\merchant-intelligence.js
+|   |-- user-rules.seed.json  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\settings\user-rules.seed.json
+|-- tests
+|   |-- attention_items_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\attention_items_proof.mjs
+|   |-- b2_render_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\b2_render_proof.mjs
+|   |-- b2_resolver_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\b2_resolver_proof.mjs
+|   |-- b3_tag_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\b3_tag_proof.mjs
+|   |-- b3b_reporting_integration_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\b3b_reporting_integration_proof.mjs
+|   |-- b3b_split_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\b3b_split_proof.mjs
+|   |-- b4_category_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\b4_category_proof.mjs
+|   |-- cross_screen_consistency.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\cross_screen_consistency.mjs
+|   |-- d_forecast_accuracy_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\d_forecast_accuracy_proof.mjs
+|   |-- drill_to_transactions_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\drill_to_transactions_proof.mjs
+|   |-- e_available_now_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\e_available_now_proof.mjs
+|   |-- g_clearcard_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\g_clearcard_proof.mjs
+|   |-- goal_engine_parity_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\goal_engine_parity_proof.mjs
+|   |-- goal_migrate_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\goal_migrate_proof.mjs
+|   |-- spendable_categories_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\spendable_categories_proof.mjs
+|   |-- stylesheet_and_code_cache_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\stylesheet_and_code_cache_proof.mjs
+|   |-- swap_seam_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\swap_seam_proof.mjs
+|   |-- treemap_geometry_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\treemap_geometry_proof.mjs
+|   |-- treemap_render_proof.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\tests\treemap_render_proof.mjs
+|-- third-party
+|   |-- pdf.min.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\third-party\pdf.min.mjs
+|   |-- pdf.worker.min.mjs  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\third-party\pdf.worker.min.mjs
+|   |-- pdf.worker.min.txt  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\third-party\pdf.worker.min.txt
+|   |-- README.md  ->  C:\Users\TA832BK\OneDrive - EY\Documents\Coding Projects\pfa\third-party\README.md

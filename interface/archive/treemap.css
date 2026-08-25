@@ -1,0 +1,127 @@
+/* =====================================================================
+   treemap.css - category spending map.
+   Loaded after glass.css. Screen-only. Tile colours come from catColour.
+   ===================================================================== */
+
+@media screen {
+  .tm-panel {
+    min-width: 0;
+  }
+
+  .tm-wrap {
+    width: 100%;
+    overflow: hidden;
+    margin: var(--s3) 0 var(--s2);
+    border-radius: 10px;
+  }
+
+  .tm-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1000 / 560;
+    max-height: 520px;
+  }
+
+  /*
+   * One complete rectangle represents one category. The quiet border
+   * separates neighbouring categories without creating an internal grid.
+   */
+  .tm-rect {
+    stroke: rgba(0, 0, 0, 0.24);
+    stroke-width: 1.25;
+    vector-effect: non-scaling-stroke;
+    shape-rendering: geometricPrecision;
+    transition:
+      filter 0.12s ease,
+      stroke 0.12s ease,
+      stroke-width 0.12s ease;
+  }
+
+  /* Softened from 0.24/0.58 - a boundary this visible read as "boxed in"
+     rather than a quiet separation between categories. */
+  .tm-rect {
+    stroke: rgba(0, 0, 0, 0.16);
+  }
+
+  [data-theme='light'] .tm-rect {
+    stroke: rgba(255, 255, 255, 0.42);
+  }
+
+  @media (prefers-color-scheme: light) {
+    [data-theme='auto'] .tm-rect {
+      stroke: rgba(255, 255, 255, 0.58);
+    }
+  }
+
+  .tm-tile.is-interactive {
+    cursor: pointer;
+  }
+
+  .tm-tile.is-interactive:hover .tm-rect {
+    filter: brightness(1.08);
+  }
+
+  .tm-tile.is-interactive:focus-visible {
+    outline: none;
+  }
+
+  .tm-tile.is-interactive:focus-visible .tm-rect {
+    stroke: var(--accent);
+    stroke-width: 3;
+    filter: brightness(1.06);
+  }
+
+  .tm-label,
+  .tm-value {
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .tm-label {
+    font-size: 13px;
+    font-weight: 680;
+    letter-spacing: -0.2px;
+    line-height: 16px;
+  }
+
+  .tm-value {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * Trend marker: shape (point-up vs point-down) is the primary signal,
+   * colour is secondary - never colour alone, matching this app's standing
+   * rule elsewhere (forecast-chart.css's solid/dashed convention, the
+   * vm-tag dot). tone-watch = spending rose; tone-good = spending fell.
+   */
+  .tm-trend.tone-watch {
+    fill: var(--warn);
+  }
+
+  .tm-trend.tone-good {
+    fill: var(--good);
+  }
+
+  .tm-help {
+    margin-bottom: 0;
+  }
+
+  .tm-uncaptioned {
+    margin-top: 4px;
+  }
+
+  @media (max-width: 639px) {
+    .tm-svg {
+      max-height: 360px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tm-rect {
+      transition: none;
+    }
+  }
+}

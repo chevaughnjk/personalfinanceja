@@ -23,7 +23,11 @@
 // "Island Grill - Manor P, Kingston 8" matching Island Grill without a stray
 // location word pulling in the wrong merchant.
 function nameOf(description) {
-  return String(description == null ? '' : description).split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase();
+  return String(description == null ? '' : description)
+    .split(',')[0]
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 // Turn each merchant's aliases into one case-insensitive matcher. Merchants are
@@ -39,16 +43,25 @@ export function compileMerchantIntelligence(merchantList, config) {
     const words = (m.aliases || []).map(String).filter((w) => w.trim());
     if (!words.length) continue;
     let re;
-    try { re = new RegExp('(?<![a-z])(?:' + words.join('|') + ')', 'i'); }
-    catch { continue; } // a bad alias must never break the whole list
+    try {
+      re = new RegExp('(?<![a-z])(?:' + words.join('|') + ')', 'i');
+    } catch {
+      continue;
+    } // a bad alias must never break the whole list
     out.push({
-      re, merchant: m,
+      re,
+      merchant: m,
       priority: order.has(m.category) ? order.get(m.category) : 999,
-      confRank: confRank[m.categoryConfidence || m.confidence] == null ? 3 : confRank[m.categoryConfidence || m.confidence],
+      confRank:
+        confRank[m.categoryConfidence || m.confidence] == null
+          ? 3
+          : confRank[m.categoryConfidence || m.confidence],
       specificity: words.reduce((n, w) => Math.max(n, w.length), 0),
     });
   }
-  out.sort((a, b) => a.priority - b.priority || a.confRank - b.confRank || b.specificity - a.specificity);
+  out.sort(
+    (a, b) => a.priority - b.priority || a.confRank - b.confRank || b.specificity - a.specificity
+  );
   return out;
 }
 
@@ -75,7 +88,10 @@ export function resolveMerchant(description, compiled) {
     // branches by location text would never match anything if tested the
     // same way the top-level merchant alias is.
     if (c.locationOverrides && c.locationOverrides.length) {
-      const haystack = String(description == null ? '' : description).replace(/\s+/g, ' ').trim().toLowerCase();
+      const haystack = String(description == null ? '' : description)
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
       for (const o of c.locationOverrides) {
         // First matching override wins; a merchant with several branches
         // needing different treatment lists them in priority order in

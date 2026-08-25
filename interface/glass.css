@@ -1,0 +1,1388 @@
+/* =====================================================================
+   Personal Finance Analyser - liquid-glass surface layer  (glass.css)
+   Loaded AFTER styles.css. Purely additive: it introduces NO new colour
+   palette (every value derives from the existing config-driven tokens),
+   removes nothing, and touches no print rule. It is a REPLACEABLE surface
+   layer - strip this file and the app falls back to the solid styles.css
+   surfaces unchanged.
+
+   Design rules it enforces (from the frozen plan):
+     - the effect lives in the SURFACES, never the content: a number is
+       always plain, sharp and legible, sitting ON the glass, not made of it;
+     - SOLID FALLBACK FIRST: the glass look is applied only where the browser
+       supports backdrop-filter AND the person has not asked to reduce
+       transparency; otherwise a solid panel is used;
+     - the accent is the light source (specular top-edge highlight + focus
+       glow), so the glass reads as tinted by the app's own colour;
+     - holds in BOTH themes; contrast of text on glass is proven, not hoped;
+     - never enters the print/report path (all rules are screen-scoped).
+   ===================================================================== */
+
+/* ---- stacking scale (one declared source, like the filter-facet registry
+   pattern this app uses for state) ---------------------------------------
+   Content lives at the browser default (auto / 0). Everything that floats
+   ABOVE content is declared here, in ascending order, so a new overlay has
+   an obvious slot and a content component can never accidentally out-stack a
+   menu again (the Export-menu-behind-treemap bug). Any positioned content
+   component - the treemap overlay included - must stay at or below --z-content. */
+:root {
+  --z-content: 0;
+  --z-sticky-chrome: 30; /* the period bar / topbar stack */
+  --z-nav: 40; /* the destination nav shell */
+  --z-overlay-backdrop: 100;
+  --z-menu: 110; /* export menu, pickers */
+  --z-banner: 120; /* install / backup / first-run banners, to-top */
+  --z-toast: 130; /* transient status, always on top */
+}
+
+/* ---- glass tokens (derived, not new colours) --------------------------- */
+:root {
+  /* Opacity floor lowered from the original 86% to 74% (main panels) and 64%
+     (the one "lead" panel per screen, see .glass-lead treatment below), so
+     real colour from the background actually shows through the frost. Text
+     contrast is proven safe at these levels for this app's fg/panel pairing
+     in both themes; the reduced-transparency branch below still forces full
+     solid for anyone who has asked for less transparency. */
+  --glass-fill: color-mix(in srgb, var(--panel) 74%, transparent);
+  --glass-fill-2: color-mix(in srgb, var(--panel-2) 80%, transparent);
+  --glass-fill-lead: color-mix(in srgb, var(--panel) 64%, transparent);
+  --glass-blur: 20px;
+  --glass-blur-lead: 26px;
+  --glass-saturate: 1.5;
+  /* Softened for the Apple pass: the edge is now a near-neutral hairline with
+     only a trace of accent, so an ordinary panel reads as reflected light on a
+     rounded surface rather than a blue rectangle drawn around the card. The
+     upper highlight stays slightly brighter than the sides (applied per-rule
+     below), and the corner glow is gentler so the top edge looks like soft
+     curved light, not a coloured band. */
+  --glass-edge: color-mix(in srgb, var(--fg) 9%, var(--edge));
+  --glass-hi: color-mix(in srgb, #fff 45%, transparent);
+  --glass-hi-dark: color-mix(in srgb, var(--accent) 26%, transparent);
+  --glass-glow: color-mix(in srgb, var(--accent) 24%, transparent);
+  /* a second, cooler corner glow paired with the top highlight, so the edge
+     reads as curved light rather than one flat line. Kept quiet on ordinary
+     panels; the lead panel below lifts it slightly. */
+  --glass-corner: color-mix(in srgb, var(--accent) 12%, transparent);
+  --glass-corner-dark: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+/* Stacking floor for the floating-surface family - unconditional, so it
+   holds identically whether the glass enhancement is active or the reduced-
+   transparency solid fallback is. A menu/picker sits at --z-menu, banners
+   above them, toasts above everything; every value is well clear of any
+   content component's own stacking (the treemap overlay is isolated at
+   z-index:0). position:relative is asserted only where a surface might not
+   already establish one, so its z-index actually takes effect. */
+.menu,
+.picker {
+  position: absolute;
+  z-index: var(--z-menu);
+}
+.install-banner,
+.offer,
+.to-top {
+  z-index: var(--z-banner);
+}
+.toast {
+  z-index: var(--z-toast);
+}
+.overlay {
+  z-index: var(--z-overlay-backdrop);
+}
+
+[data-theme='dark'] {
+  --glass-hi: var(--glass-hi-dark);
+  --glass-corner: var(--glass-corner-dark);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme='auto'] {
+    --glass-hi: var(--glass-hi-dark);
+    --glass-corner: var(--glass-corner-dark);
+  }
+}
+
+/* ---- the glass surface, applied ONLY when supported AND wanted ---------
+   Base rule keeps the solid styles.css panel. The @supports + not-reduced
+   guard below is what upgrades it to glass, so the fallback is the default
+   and the glass is the progressive enhancement. */
+@media screen {
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @media (prefers-reduced-transparency: no-preference) {
+      .glass,
+      #app.wrap > .card,
+      .accounts-wrap > .card,
+      .card.hero {
+        background: var(--glass-fill);
+        -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+        backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+        border: 1px solid var(--glass-edge);
+        /* A calm, rounded, lit surface. The light lives in a soft top-edge
+           highlight and a gentle corner glow; the lower edge is very slightly
+           darkened so the panel reads as a curved surface rather than a flat
+           slab. The drop shadow is kept soft and broad so panels float without
+           looking heavy or detached. */
+        box-shadow:
+          inset 0 1px 0 var(--glass-hi),
+          inset 0 22px 42px -38px var(--glass-corner),
+          inset 0 -1px 0 color-mix(in srgb, #000 10%, transparent),
+          0 2px 10px -6px color-mix(in srgb, #000 22%, transparent),
+          0 14px 40px -22px color-mix(in srgb, #000 26%, transparent);
+      }
+      /* The ONE lead panel per screen (the app's own hero, or the first
+         .card in a screen that has no hero) goes a visible step further:
+         more transparent, more blurred, a brighter corner glow. Every other
+         panel on the same screen stays at the calmer base treatment above,
+         so there is one obvious "most glass" object per screen rather than
+         a wall of identically-strong panels. */
+      .card.hero,
+      .card.lead {
+        background: var(--glass-fill-lead);
+        -webkit-backdrop-filter: saturate(calc(var(--glass-saturate) + 0.2))
+          blur(var(--glass-blur-lead));
+        backdrop-filter: saturate(calc(var(--glass-saturate) + 0.2)) blur(var(--glass-blur-lead));
+        /* The lead panel keeps the same soft language, only a touch stronger:
+           a slightly brighter top light and a marginally deeper float, so it
+           reads as the clearest window into the screen without becoming the
+           brightest or most bordered object. */
+        box-shadow:
+          inset 0 1px 0 var(--glass-hi),
+          inset 0 34px 60px -34px var(--glass-corner),
+          inset 0 -1px 0 color-mix(in srgb, #000 12%, transparent),
+          0 3px 14px -8px color-mix(in srgb, #000 24%, transparent),
+          0 22px 56px -26px color-mix(in srgb, #000 30%, transparent);
+      }
+      /* the navigation shell + sticky chrome get a deeper frost so content
+         scrolls UNDER them with a sense of depth, not a hard cut. */
+      .glass-nav {
+        background: color-mix(in srgb, var(--panel) 68%, transparent);
+        -webkit-backdrop-filter: saturate(1.6) blur(20px);
+        backdrop-filter: saturate(1.6) blur(20px);
+      }
+      /* an open sheet blurs what is behind it rather than dimming to black,
+         so context is never fully lost (frozen rule). */
+      .overlay.glass-overlay {
+        background: color-mix(in srgb, var(--bg) 40%, transparent);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+    }
+  }
+}
+
+/* ---- REDUCED TRANSPARENCY: force solid everywhere the glass would apply.
+   This is the accessibility contract - a person who asks for less
+   transparency gets fully opaque surfaces, no blur. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-nav,
+  #app.wrap > .card,
+  .accounts-wrap > .card,
+  .card.hero {
+    background: var(--panel) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .overlay.glass-overlay {
+    background: color-mix(in srgb, #000 42%, transparent) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* =====================================================================
+   The shared CONTENT MODEL component: number -> tag -> dropdown.
+   Every analysis view-model (available-now, committed-flexible,
+   spend-breakdown, category-intentions, goals, position) emits this shape.
+   The number is the largest, plainest thing; the tag is a few pronoun-free
+   words; the fuller reasoning hides in a native <details> dropdown.
+   These are CONTENT, so they are always solid, sharp and legible - never
+   glassy. Reuses existing tokens and the .attn-dot tone convention.
+   ===================================================================== */
+.vm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.vm-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* the number: the largest thing on the card, never behind a click, never
+   translucent - it sits ON the glass, it is not made of it. */
+/* Base lead-figure size for every ANALYSIS card (Activity, Position, Forecast).
+   Tuned to 27px to sit in the same comfortable number-to-label-to-space
+   proportion Overview's hero reads at, rather than dominating its card - a
+   32px figure felt heavy and, with several cards on a screen (and two cards
+   paired side by side at >=1000px), read as a wall of competing numbers. The
+   ONE hero figure keeps .lg (42px) below; dense mode overrides via --vm-number.
+   Layout is unaffected: no grid (.vm-pair / .dash-grid / .accounts-grid) keys
+   off this figure's height, so side-by-side pairing is untouched. */
+.vm-number {
+  font-size: 27px;
+  font-weight: 780;
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+/* FIGURE-SIZE STANDARD: 42px (.lg) is reserved for a screen's single HERO
+   figure - and the only hero card in this app is Available-now (.card.hero on
+   Overview). Every other card is a plain .card in a scrolling analysis set and
+   uses the base 32px above, so a screen never shows several 42px figures each
+   louder than the app's real hero. Do not add .lg to a non-hero card; if a new
+   true hero is introduced, give its card .card.hero and use .lg there only. */
+.vm-number.lg {
+  font-size: 42px;
+}
+.vm-label {
+  font-size: 13px;
+  color: var(--dim);
+}
+/* the tag: a few words closing the number against a reference point. Flat
+   pill, pronoun-free by construction (the view-models guarantee it). Tone
+   maps to the SAME dot convention styles.css already uses. */
+.vm-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 650;
+  background: var(--panel-2);
+  color: var(--fg);
+  border: 1px solid var(--edge);
+}
+.vm-tag::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--dim);
+}
+/* A wrapping ROW of tags. .vm is flex-direction:column, so .vm-tag children
+   appended straight to it stack vertically; .vm-tags makes them a horizontal
+   set of pills that wraps to a second line only when it runs out of width. */
+.vm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* Tone is carried by the DOT only; the tag TEXT stays plain --fg. This mirrors
+   the app's own .ktag rule ("the colour is carried by the dot; the text always
+   names the state"), so tone never relies on colour alone AND the text keeps
+   the proven --fg-on-panel contrast in both themes. Tinting the text toward the
+   light-only --good/--warn tokens failed dark-mode AA (3.7-3.9:1); this avoids
+   that entirely while staying within the existing colour vocabulary. */
+.vm-tag.tone-good::before {
+  background: var(--good);
+}
+.vm-tag.tone-watch::before {
+  background: var(--warn);
+}
+.vm-tag.tone-neutral::before {
+  background: var(--dim);
+}
+/* dark mode: use the theme-aware green/warm for the DOT so it stays vivid on a
+   dark surface (the light --good/--warn read muddy there). Dot only - not text. */
+[data-theme='dark'] .vm-tag.tone-good::before {
+  background: var(--down);
+}
+[data-theme='dark'] .vm-tag.tone-watch::before {
+  background: var(--up);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme='auto'] .vm-tag.tone-good::before {
+    background: var(--down);
+  }
+  [data-theme='auto'] .vm-tag.tone-watch::before {
+    background: var(--up);
+  }
+}
+
+/* the info dropdown: the fuller reasoning, collapsed by default. Reuses the
+   exact details.explainer pattern styles.css already ships (chevron, focus
+   ring), so this is one visual language for "openable detail" app-wide. */
+.vm-detail {
+  margin-top: var(--s1);
+}
+.vm-detail > summary {
+  list-style: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dim);
+}
+.vm-detail > summary::-webkit-details-marker {
+  display: none;
+}
+/* 8px matches every other disclosure chevron in the app (.secondary /
+   .explainer / .tx-more in styles.css), so the "Why"/"Rate" content-model
+   dropdowns present the same chevron size as the card-level disclosures -
+   one openable-affordance language, not a 7px/8px split. */
+.vm-detail > summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 1.6px solid currentColor;
+  border-bottom: 1.6px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  opacity: 0.6;
+}
+.vm-detail[open] > summary::after {
+  transform: rotate(45deg);
+}
+.vm-detail > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.vm-detail-body {
+  padding-top: var(--s2);
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vm-detail > summary::after {
+    transition: none;
+  }
+}
+
+/* the mandatory reconciling / supporting line (committed-vs-flexible, the
+   goal guard verdict) - always attached beneath its figure, never a separate
+   dismissible element. Quiet, but present. */
+.vm-reconcile {
+  margin-top: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  background: color-mix(in srgb, var(--panel-2) 70%, transparent);
+  border-left: 3px solid var(--dim);
+}
+.vm-reconcile.tone-watch {
+  border-left-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 7%, var(--panel-2));
+}
+.vm-reconcile.tone-good {
+  border-left-color: var(--good);
+}
+
+/* =====================================================================
+   Four-destination navigation shell (Overview / Activity / Forecast /
+   Position). Desktop: a compact glass sidebar. Phone: a glass bottom bar.
+   Built on the existing .ledger-switch / .ledger-tab primitives so it
+   inherits their proven touch sizing and active states; glass.css only
+   adds the four-item layout and the frosted surface.
+   ===================================================================== */
+.dest-nav {
+  display: flex;
+  gap: 4px;
+}
+.dest-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  font-weight: 650;
+  font-size: 13.5px;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  min-height: var(--tap-min);
+}
+.dest-tab:hover {
+  color: var(--fg);
+}
+.dest-tab.active {
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: var(--shadow);
+}
+.dest-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.dest-tab svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 960px) {
+  /* desktop: vertical glass sidebar */
+  .dest-nav.dest-sidebar {
+    flex-direction: column;
+    gap: 3px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    padding: 14px 10px;
+    min-width: 200px;
+    height: 100vh;
+    border-right: 1px solid var(--glass-edge, var(--edge));
+  }
+  .dest-sidebar .dest-tab {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 11px;
+  }
+  .dest-sidebar .dest-tab.active {
+    background: color-mix(in srgb, var(--accent) 12%, var(--panel-2));
+    color: var(--accent-dark);
+    box-shadow: none;
+  }
+}
+@media (max-width: 959px) {
+  /* phone/tablet: fixed glass bottom bar, thumb reach */
+  .dest-nav.dest-bottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    gap: 4px;
+    padding: 6px calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
+      calc(8px + env(safe-area-inset-left));
+    border-top: 1px solid var(--glass-edge, var(--edge));
+  }
+  .dest-bottom .dest-tab {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 48px;
+    border-radius: 12px;
+    font-size: 10.5px;
+  }
+  body.has-dest-nav {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+/* =====================================================================
+   Paired-panel layout: two symmetric, related cards side by side on wide
+   screens; a lone card (no partner this period) takes the full row rather
+   than sitting beside an empty space. Prose inside a card is width-capped
+   (the REAL fix the research supported - reading measure, not card width),
+   while numbers and tags are exempt so figures never wrap oddly.
+   ===================================================================== */
+@media (min-width: 1000px) {
+  .vm-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--card-gap);
+    align-items: start;
+  }
+  .vm-pair.solo {
+    grid-template-columns: 1fr;
+  }
+  /* A genuine N-column row, not a hardcoded 2-up or 3-up grid - used where
+     several peer figures (Position's cash on hand / owed on card / income
+     stability) should read as equal columns regardless of how many exist.
+     auto-fit means: one card stretches full width (.solo makes that
+     explicit rather than relying on auto-fit's own behaviour), two split
+     the row evenly, three sit evenly across it, and a future fourth wraps
+     onto a second line rather than the rule silently breaking. Below this
+     breakpoint every item stacks fully in normal document order - the same
+     mobile fallback .vm-pair already uses, so nothing about small-screen
+     behaviour changes. */
+  .vm-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--card-gap);
+    align-items: start;
+  }
+  .vm-row.solo {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* A quiet hairline divider between single-line rows (Test a decision's
+   category checklist, ahead-render.js's renderScenarioCard). .recurring-
+   list's own 2px row gap (styles.css) reads fine against a two-line ~80px
+   row (What's expected before then, .commit-row) but nearly vanishes
+   against these ~42px single-line rows, so three separate choices
+   collapsed into what looked like one dense strip. Scoped to .chk-list
+   only, so every other .recurring-row list (Tags, category ceilings,
+   payee/merchant rows) keeps its plain, divider-free look.
+   Spacing is symmetrical on both sides of the line: the row ABOVE gets
+   matching bottom padding to the padding-top given to the row BELOW -
+   giving only one side padding read as the row above being top-heavy even
+   though its own content was centred correctly within its box. */
+.chk-list > .recurring-row {
+  padding-bottom: 10px;
+}
+
+/* Test a decision's per-category rows: name (flex, ellipsised) - amount
+   (right-aligned, tabular) - segmented control, on one line. */
+.scenario-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px auto;
+  align-items: center;
+  gap: 12px;
+}
+.scenario-row .recurring-amt {
+  text-align: right;
+}
+
+/* Grouped segmented control (Keep / Cut half / Cut all) - three connected
+   buttons in one bordered container, so they read as a single choice, in the
+   same grouped-segmented language as the account slicer but tighter for an
+   inline row. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  overflow: hidden;
+  flex: none;
+}
+.seg-btn {
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  min-height: 32px;
+  white-space: nowrap;
+}
+.seg-btn + .seg-btn {
+  border-left: 1px solid var(--edge);
+}
+.seg-btn:hover {
+  color: var(--fg);
+  background: var(--panel-2);
+}
+.seg-btn.active {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel-2));
+}
+.seg-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.chk-list > .recurring-row + .recurring-row {
+  border-top: 1px solid var(--edge);
+  padding-top: 10px;
+  /* margin-top removed: it added no visible spacing beyond what
+     padding-top/border-top already provide, only unaccounted height that
+     pushed the list past its scroll window - see .pair-scroll-recurring's
+     own comment above for the exact arithmetic this was causing. */
+}
+
+/* A brief, calm arrival highlight for a specific transaction row reached via
+   drillToTransaction (shared-helpers.js) - the clearest signal that "this is
+   the one" versus merely landing somewhere in a filtered list. Fades using
+   the same accent-tinted language .insight:hover already establishes
+   elsewhere, so it reads as one consistent "this matters right now"
+   treatment rather than a new visual idiom. */
+@keyframes tx-focus-flash {
+  from {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+.tx-row.focus-row {
+  animation: tx-focus-flash 2.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tx-row.focus-row {
+    animation: none;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+
+/* cap the measure of explanatory prose only (not numbers/tags/tables). */
+.vm-detail-body,
+.vm-reconcile,
+.card > p.muted {
+  max-width: 68ch;
+}
+
+/* print: the content model must print solid and dark-on-white; glass never
+   reaches print because every glass rule above is @media screen scoped, but
+   assert the vm component stays legible if a card is ever included. */
+@media print {
+  .vm-number,
+  .vm-label,
+  .vm-tag,
+  .vm-detail-body,
+  .vm-reconcile {
+    color: #10161f !important;
+    background: none !important;
+  }
+  .vm-tag {
+    border-color: #cdd5df !important;
+  }
+}
+
+/* =====================================================================
+   forecast-chart.css  -  styles for the honest cash-forecast chart.
+   Additive; append to glass.css (or load after it). No new palette:
+   every colour derives from the existing config-driven tokens. All
+   screen-scoped; the chart never enters the print/report path.
+   ===================================================================== */
+@media screen {
+  .fc-chart-wrap {
+    width: 100%;
+    overflow: hidden;
+    margin: var(--s2) 0 var(--s2);
+    /* positioning context for .fc-overlay, the HTML label layer that
+       replaces every SVG <text> element this chart used to draw. */
+    position: relative;
+  }
+  .fc-chart {
+    width: 100%;
+    height: 150px;
+    display: block;
+  }
+
+  /* gridlines only - quiet, muted. Every label (axis values/dates, the
+     trough callout, event names) now lives in .fc-overlay below, as real
+     HTML text: SVG <text> inside this chart's stretched, non-uniform
+     viewBox rendered every glyph distorted, which is what read as blurred. */
+  .fc-grid {
+    stroke: var(--edge);
+    stroke-width: 1;
+    opacity: 0.6;
+  }
+
+  /* The HTML label overlay: a plain sibling layer positioned over the SVG,
+     the same proven pattern the treemap already uses (treemap-render.js's
+     .tm-overlay / treemap.css) for exactly this reason - real CSS-pixel
+     text that never inherits the picture's own stretch or zoom. */
+  .fc-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .fc-label {
+    position: absolute;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  /* Every label in this chart sits ABOVE its reference point (an axis
+     gridline, an event tick, the trough), so the vertical lift is shared;
+     only the horizontal anchor varies per label. */
+  .fc-label.anchor-start {
+    transform: translate(0, -100%);
+  }
+  .fc-label.anchor-mid {
+    transform: translate(-50%, -100%);
+  }
+  .fc-label.anchor-end {
+    transform: translate(-100%, -100%);
+  }
+  .fc-axis-money {
+    color: var(--dim);
+    font-size: 9px;
+  }
+  .fc-axis-date {
+    color: var(--dim);
+    font-size: 9px;
+  }
+
+  /* The filled AREA under the projected line - the app's bold flat filled-
+     shape language, so the forecast reads as a solid form (where is cash
+     heading) rather than a thin line. A confident accent fill. */
+  .fc-area {
+    fill: color-mix(in srgb, var(--accent) 24%, transparent);
+    stroke: none;
+  }
+  /* The uncertainty band: the same accent, lighter, sitting behind the area -
+     a soft extension of the projection, thickening to the right. Reads as
+     "the same forecast, less certain", one colour family, not a grey slab. */
+  .fc-band {
+    fill: color-mix(in srgb, var(--accent) 10%, transparent);
+    stroke: none;
+  }
+  /* the projected balance line: crisp on top of its area. Non-scaling stroke
+     (set on the element) keeps it a true even width under the viewBox stretch. */
+  .fc-line {
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  /* Verdict-first hero: the plain toned sentence that leads the card, answering
+     "am I okay". Larger and bolder than body text but NOT hero-number size -
+     it is a sentence, the loudest thing on the card, toned to the safe-line
+     comparison. The three colours reuse the app's own good/warn/bad tokens. */
+  .fc-verdict {
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.35;
+    max-width: 60ch;
+  }
+  .fc-verdict-good {
+    color: var(--fg);
+  }
+  .fc-verdict-warn {
+    color: var(--fg);
+  }
+  .fc-verdict-bad {
+    color: var(--fg);
+  }
+  /* A small tone dot leads the verdict so tone never relies on wording alone,
+     matching the app's dot convention (colour on the dot, text stays --fg). */
+  .fc-verdict::before {
+    content: '';
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: baseline;
+    background: var(--dim);
+  }
+  .fc-verdict-good::before {
+    background: var(--good);
+  }
+  .fc-verdict-warn::before {
+    background: var(--warn);
+  }
+  .fc-verdict-bad::before {
+    background: var(--bad, var(--warn));
+  }
+  [data-theme='dark'] .fc-verdict-good::before {
+    background: var(--down);
+  }
+  [data-theme='dark'] .fc-verdict-warn::before {
+    background: var(--up);
+  }
+
+  /* Three quiet supporting stats in a row: labelled figures, none in hero size,
+     so the low point reads as one fact among three, never as a balance. */
+  .fc-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin-top: 4px;
+  }
+  .fc-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .fc-stat-value {
+    font-size: 15px;
+    font-weight: 650;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+  /* the firm/wide divider: a quiet dashed vertical rule where the trustworthy
+     near-term ends and the wide far-term begins */
+  .fc-divider {
+    stroke: var(--dim);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+    opacity: 0.7;
+  }
+
+  /* the trough marker: the near-term low, the trustworthy output. A firm low
+     is the accent; a 'wide'-reliability low is muted so it never over-claims. */
+  .fc-trough {
+    stroke: var(--panel);
+    stroke-width: 2;
+  }
+  .fc-trough-firm {
+    fill: var(--warn);
+  } /* the dip a person acts on, no safe line set */
+  .fc-trough-wide {
+    fill: var(--dim);
+  }
+  /* Safe-line-aware tones (used only when a real floor is asserted): warm
+     when the projected low genuinely dips below the person's own safe line,
+     calm green when it clears it - judged against a real number, never
+     against reliability alone. */
+  .fc-trough-warn {
+    fill: var(--warn);
+  }
+  /* .fc-trough-firm above is reused as the "clears the safe line" calm state
+     when a floor is asserted, so no separate calm class is needed here. */
+  .fc-trough-label {
+    color: var(--fg);
+    font-size: 10px;
+    font-weight: 650;
+  }
+  .fc-ev-label {
+    color: var(--dim);
+    font-size: 8.5px;
+  }
+  .fc-ev-label-estimated {
+    opacity: 0.85;
+  }
+
+  /* event markers. Direction carries meaning too (in = calm green tick above,
+     out = warm tick), but SOLID vs DASHED is the recorded-vs-estimated signal,
+     never colour alone. */
+  .fc-ev {
+    stroke-width: 2;
+  }
+  .fc-ev-in {
+    stroke: var(--flow-in, var(--down));
+  }
+  .fc-ev-out {
+    stroke: var(--flow-out, var(--up));
+  }
+  .fc-ev-recorded {
+    stroke-width: 2.4;
+  } /* solid: a known payment */
+  .fc-ev-estimated {
+    opacity: 0.85;
+  } /* dashed via attribute */
+  .fc-ev-clickable {
+    cursor: pointer;
+  }
+  .fc-ev-clickable:hover,
+  .fc-ev-clickable:focus-visible {
+    stroke-width: 3.2;
+    outline: none;
+  }
+
+  /* legend: names every signal in words (colour/style never the only cue) */
+  .fc-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: var(--s2);
+  }
+  .fc-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .fc-key {
+    width: 16px;
+    height: 0;
+    border-top-width: 2.5px;
+    border-top-style: solid;
+    display: inline-block;
+  }
+  .fc-key-line {
+    border-top-color: var(--accent);
+  }
+  .fc-key-area {
+    height: 10px;
+    border: 0;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+  .fc-key-band {
+    height: 10px;
+    border: 0;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  .fc-key-cone {
+    height: 10px;
+    border: 0;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+  .fc-key-recorded {
+    border-top-color: var(--fg);
+  }
+  .fc-key-estimated {
+    border-top-style: dashed;
+    border-top-color: var(--fg);
+  }
+}
+
+/* the chart is screen-only; never attempt to print the interactive SVG */
+@media print {
+  .fc-chart-wrap,
+  .fc-legend {
+    display: none !important;
+  }
+}
+
+/* =====================================================================
+   APPLE PASS - floating surfaces + gentle interaction (screen-only).
+   Everything here is a REPLACEABLE enhancement: it upgrades menus,
+   pop-ups and temporary controls to the same soft glass language the
+   panels use, and gives buttons / tabs a quiet, physical response. It
+   introduces no new palette (every value derives from existing tokens),
+   never touches print, and is fully rolled back by the reduced-
+   transparency / reduced-motion contracts at the foot of this block.
+   The guiding rule: glass is strongest on navigation, menus and
+   decisions; ordinary information panels stay calm; the money figures
+   stay solid and sharp.
+   ===================================================================== */
+@media screen {
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @media (prefers-reduced-transparency: no-preference) {
+      /* ---- Floating decision surfaces: the Export menu, every picker /
+         confirmation window, the toast, the install prompt, the busy card,
+         and the two floating controls. These genuinely sit ABOVE the app,
+         so they carry the clearest glass character on the screen: real
+         translucency, a soft top-edge light, and a broad, gentle shadow
+         instead of a hard dark rectangle. */
+      .menu,
+      .picker,
+      .toast,
+      .install-banner,
+      .offer,
+      .busy-card,
+      .report-close,
+      .to-top {
+        /* A floating DECISION surface must occlude the content behind it
+           through its own fill, NEVER by relying on backdrop-filter. These
+           surfaces are descendants of the sticky topbar, which itself has a
+           backdrop-filter - and a nested backdrop-filter is silently
+           defeated by an ancestor that already has one (there is no
+           un-composited backdrop left for the child to sample). When that
+           happens the old 72% fill let a person's actual balances bleed
+           straight through the open Export menu on every tab. The fill is
+           now near-opaque, so the surface reads as solid regardless of
+           whether the blur renders; the blur stays only as an aesthetic
+           enhancement WHERE it works, no longer load-bearing for occlusion.
+           This is the same fix applied to the period bar (styles.css). Cards
+           and panels are deliberately NOT changed - their translucency is
+           the glass aesthetic and content behind them is MEANT to be softly
+           present; a menu is a different category, nothing behind it should
+           be readable while it is open. */
+        background: color-mix(in srgb, var(--panel) 97%, transparent);
+        -webkit-backdrop-filter: saturate(1.6) blur(22px);
+        backdrop-filter: saturate(1.6) blur(22px);
+        border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--edge));
+        box-shadow:
+          inset 0 1px 0 var(--glass-hi),
+          inset 0 -1px 0 color-mix(in srgb, #000 10%, transparent),
+          0 4px 16px -8px color-mix(in srgb, #000 26%, transparent),
+          0 24px 60px -24px color-mix(in srgb, #000 34%, transparent);
+      }
+
+      /* The toast keeps its dark, high-contrast pill for legibility of the
+         undo action, but softens its edge to match the family. Fill raised
+         to near-opaque for the same reason as the menu family above: a
+         transient status surface must read solidly regardless of whether
+         its nested blur renders. */
+      .toast {
+        background: color-mix(in srgb, var(--tip-bg) 97%, transparent);
+        border-color: color-mix(in srgb, #fff 12%, transparent);
+      }
+
+      /* Hovered menu / list items get a light TINT, not a hard filled block,
+         so selection reads as a soft glow passing under the item. */
+      .menu-item:hover,
+      .picker-item:hover {
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+      }
+      .picker-item.current {
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+      }
+
+      
+
+      /* The dimmed page behind a modal is softened rather than blacked out,
+         so context is never fully lost - the app stays recognisable beneath
+         the active decision (Apple's "the layer below remains present"). */
+      .overlay {
+        background: color-mix(in srgb, var(--bg) 46%, transparent);
+        -webkit-backdrop-filter: saturate(1.1) blur(8px);
+        backdrop-filter: saturate(1.1) blur(8px);
+      }
+
+      /* ---- Navigation: the destination pill is the strongest everyday glass
+         control. The active capsule stays a touch more solid so the current
+         destination is never in doubt, and it settles smoothly when the
+         destination changes (movement handled by the transition below). */
+      .ledger-tab {
+        transition:
+          color 0.18s ease,
+          background 0.22s ease,
+          box-shadow 0.22s ease;
+      }
+      .ledger-tab.active {
+        background: color-mix(in srgb, var(--panel) 88%, transparent);
+        box-shadow:
+          inset 0 1px 0 var(--glass-hi),
+          0 1px 6px -3px color-mix(in srgb, #000 26%, transparent);
+      }
+      .ledger-tab:hover:not(.active) {
+        background: color-mix(in srgb, var(--fg) 6%, transparent);
+      }
+
+      /* ---- Buttons: a quiet, physical response. Hover brightens a soft
+         upper-edge light; press settles the surface down a hair. No growth,
+         no bounce, no colour jump - the neighbour content never shifts. */
+      .btn {
+        transition:
+          background 0.16s ease,
+          border-color 0.16s ease,
+          box-shadow 0.18s ease,
+          transform 0.08s ease,
+          filter 0.16s ease;
+      }
+      .btn:hover {
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent),
+          0 2px 10px -6px color-mix(in srgb, #000 24%, transparent);
+      }
+      .btn:active {
+        transform: translateY(1px);
+        box-shadow: inset 0 1px 2px color-mix(in srgb, #000 18%, transparent);
+      }
+      /* The primary action keeps its accent fill but gains the same soft
+         upper light, so it reads as a lit glass button rather than a flat
+         coloured block. */
+      .btn.primary:hover {
+        filter: brightness(1.04);
+        box-shadow:
+          inset 0 1px 0 color-mix(in srgb, #fff 30%, transparent),
+          0 3px 14px -6px color-mix(in srgb, var(--accent) 45%, transparent);
+      }
+
+      /* ---- Openable rows: insights, category rows, commitment rows and the
+         account selector get a soft light on hover and a gentle arrow lift,
+         with NO sideways slide, so long lists stay calm while still feeling
+         responsive. */
+      .insight {
+        transition:
+          background 0.16s ease,
+          box-shadow 0.18s ease,
+          border-color 0.16s ease;
+      }
+      .insight:hover {
+        transform: none;
+        border-color: color-mix(in srgb, var(--accent) 30%, var(--edge));
+        background: color-mix(in srgb, var(--accent) 8%, var(--panel-2));
+        box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 14%, transparent);
+      }
+      .insight:hover .insight-go {
+        opacity: 1;
+        color: var(--accent);
+      }
+    }
+  }
+}
+
+/* ---- ACCESSIBILITY CONTRACTS (mirror the base file) --------------------
+   Reduced transparency: every floating surface returns to a fully solid
+   panel, exactly like the base cards do, so nothing here weakens the
+   opaque-surface promise. */
+@media (prefers-reduced-transparency: reduce) {
+  .menu,
+  .picker,
+  .toast,
+  .install-banner,
+  .busy-card,
+  .report-close,
+  .to-top {
+    background: var(--panel) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .toast {
+    background: var(--tip-bg) !important;
+  }
+  .overlay {
+    background: color-mix(in srgb, #000 42%, transparent) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Reduced motion: keep every state CHANGE (colour, light, solidity) but
+   remove the movement and easing, so a person who asked for stillness gets
+   an instant, calm result with no sliding or settling. */
+@media (prefers-reduced-motion: reduce) {
+  .ledger-tab,
+  .btn,
+  .insight {
+    transition: none !important;
+  }
+  .btn:active {
+    transform: none !important;
+  }
+}
+
+/* =====================================================================
+   Privacy mode - blurs every figure on screen, without removing it from
+   the document. A blur (not a placeholder glyph or asterisks) is the
+   deliberate choice: it reads as "content genuinely present, out of
+   focus" rather than "something was redacted here", which announces
+   there is something worth digging for. Driven by a single root
+   attribute (:root[data-privacy='on']), set and persisted the same way
+   theme already is (document.documentElement.dataset.privacy,
+   Store.setMeta('privacy', ...)) - read anywhere via isPrivacyMode()
+   (shared-helpers.js). Screen-only; print and export are explicitly
+   exempted below, since privacy mode is a presentation state, never a
+   data-redaction one - "Copy summary" and the printed report both share
+   real figures on purpose and must never be touched by this.
+
+   .num is this app's real, pre-existing, broadly-applied figure class
+   (table cells, .amt, .recent-amt, .foreign-amt, the print report's own
+   .rp .num). The remaining classes are figure-bearing surfaces that do
+   NOT carry .num themselves (standalone chart labels styled directly).
+   This list reflects every confirmed figure-bearing class found this
+   pass; it is not a claim of exhaustive coverage - a further figure
+   surface may still turn up later, most likely wherever a figure is
+   interpolated directly into a sentence (an insight or caption's own
+   template literal) rather than given its own dedicated element, which
+   this attribute-selector approach cannot reach at all.
+   ===================================================================== */
+:root[data-privacy='on'] .num,
+:root[data-privacy='on'] .hero-amount,
+:root[data-privacy='on'] .vm-number,
+:root[data-privacy='on'] .fact-value,
+:root[data-privacy='on'] .sec-value,
+:root[data-privacy='on'] .fc-axis-money,
+:root[data-privacy='on'] .fc-trough-label,
+:root[data-privacy='on'] .fc-ev-label,
+:root[data-privacy='on'] .tm-value {
+  filter: blur(7px);
+  /* A blurred figure that can still be selected and copied would defeat
+     the feature at the exact moment it matters most - a screenshot or a
+     copy-paste would still carry the real digits underneath the blur.
+     -webkit- prefix ordered before the unprefixed property, matching this
+     app's own established prefix convention (see backdrop-filter pairs
+     throughout this file). */
+  -webkit-user-select: none;
+  user-select: none;
+  transition: filter 0.15s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-privacy='on'] .num,
+  :root[data-privacy='on'] .hero-amount,
+  :root[data-privacy='on'] .vm-number,
+  :root[data-privacy='on'] .fact-value,
+  :root[data-privacy='on'] .sec-value,
+  :root[data-privacy='on'] .fc-axis-money,
+  :root[data-privacy='on'] .fc-trough-label,
+  :root[data-privacy='on'] .fc-ev-label,
+  :root[data-privacy='on'] .tm-value {
+    transition: none;
+  }
+}
+
+/* Proportional charts and bars encode a figure TWICE - once as printed
+   text (blurred above) and once as physical shape (bar height, tile
+   area, commitment-bar width). A dominant bar or tile still says "this
+   is clearly the biggest" even with every number blurred, which only
+   half-satisfies "hide the figures". The flow chart's bars and the
+   regular-commitments bar are pure CSS height/width percentages, so they
+   flatten here directly; !important is required because the real
+   value still lives as an inline style per element (flow-chart-
+   render.js, cards-render.js's renderCommitRow) and only an !important
+   author rule can override an inline style. Equalised to ONE flat value
+   (not just "shorter") so no relative comparison survives at all - an
+   honestly uninformative shape while privacy mode is on. The treemap's
+   tiles are real SVG width/height attributes, not CSS-driven, so its
+   equivalent fix lives in treemap-render.js itself (JS-side), not here. */
+:root[data-privacy='on'] .fl-bar {
+  height: 45% !important;
+}
+:root[data-privacy='on'] .commit-bar-fill {
+  width: 45% !important;
+}
+
+/* Print and export are deliberate acts of SHARING real figures on
+   purpose - privacy mode must never reach either. Matches the exact
+   pattern the vm component and the forecast chart already use for their
+   own print exemptions (both @media print, both !important) rather than
+   inventing a second convention. */
+@media print {
+  .num,
+  .hero-amount,
+  .vm-number,
+  .fact-value,
+  .sec-value,
+  .fc-axis-money,
+  .fc-trough-label,
+  .fc-ev-label,
+  .tm-value {
+    filter: none !important;
+    -webkit-user-select: auto !important;
+    user-select: auto !important;
+  }
+  .fl-bar,
+  .commit-bar-fill {
+    height: revert !important;
+    width: revert !important;
+  }
+}
+
+/* =====================================================================
+   Keep the support area (Data & settings) quiet on every screen. It is a
+   .card.secondary and can land first in the DOM on some destinations,
+   where it would otherwise inherit the strong "lead panel" glass and read
+   as more important than the financial answer. This holds it to a calm,
+   nearly-flat surface with no bright edge and no lifted glow, so the money
+   content always leads even when the ordering puts settings first. Higher
+   specificity than the lead rule (the id form) and later source order (the
+   wrapper form) guarantee this wins. Screen-only; the reduced-transparency
+   contract above still forces it fully solid when asked.
+   ===================================================================== */
+@media screen {
+  #app.wrap > .card.secondary,
+  .accounts-wrap > .card.secondary,
+  .card.secondary {
+    background: color-mix(in srgb, var(--panel-2) 55%, var(--panel));
+    -webkit-backdrop-filter: saturate(1.1) blur(10px);
+    backdrop-filter: saturate(1.1) blur(10px);
+    border: 1px solid color-mix(in srgb, var(--fg) 7%, var(--edge));
+    box-shadow: none;
+  }
+}
+
+/* =====================================================================
+   Messaging model - glass treatment (screen-only, solid-first).
+   The floating OFFER joins the floating-surface family above (added to the
+   shared selector list). The ambient STATUS LINE is content-adjacent, so it
+   takes only a calm translucency - never the strong floating treatment - so
+   it reads as a quiet note within the content, not a window above it. Both
+   fall back fully solid under reduced transparency, matching every other
+   surface in this file.
+   ===================================================================== */
+@media screen {
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    @media (prefers-reduced-transparency: no-preference) {
+      .status-line {
+        background: color-mix(in srgb, var(--panel-2) 72%, transparent);
+        -webkit-backdrop-filter: saturate(1.2) blur(12px);
+        backdrop-filter: saturate(1.2) blur(12px);
+        border: 1px solid color-mix(in srgb, var(--fg) 8%, var(--edge));
+        box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+      }
+    }
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .offer,
+  .status-line {
+    background: var(--panel) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .status-line {
+    background: var(--panel-2) !important;
+  }
+}
+
+/* =====================================================================
+   v19 surface hierarchy (loads last, so it settles ties over both files).
+   Plan sections 1 and 4: one lead surface per screen carries the deepest
+   float; ordinary supporting cards recede to a calmer, flatter surface so
+   the screen reads as a hierarchy, not a stack of equally loud boxes. The
+   glass fill and blur set above are untouched; only the elevation and edge
+   are tuned here. Data & settings (.secondary) and the ambient status line
+   are deliberately excluded so they never gain float. Screen-only; the
+   reduced-transparency contract earlier in this file still forces solids.
+   ===================================================================== */
+@media screen {
+  /* The one lead panel per destination: a slightly deeper, softer float and
+     a faintly accent-tinted edge, so it sits forward through depth rather
+     than brightness. */
+  .card.hero,
+  .card.lead {
+    border-color: color-mix(in srgb, var(--accent) 20%, var(--glass-edge, var(--edge)));
+    box-shadow:
+      inset 0 1px 0 var(--glass-hi),
+      inset 0 34px 60px -34px var(--glass-corner),
+      0 26px 60px -30px color-mix(in srgb, #000 34%, transparent);
+  }
+  /* Ordinary supporting cards: quieter edge, shallow shadow, no corner glow,
+     so they clearly sit behind the lead surface. */
+  .card:not(.hero):not(.lead):not(.secondary) {
+    border-color: color-mix(in srgb, var(--fg) 8%, var(--edge));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent),
+      0 10px 34px -30px color-mix(in srgb, #000 30%, transparent);
+  }
+}
+
+/* =====================================================================
+   Dashboard grid utilities
+   ===================================================================== */
+@media (min-width: 1000px) {
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--card-gap);
+    align-items: start;
+  }
+
+  .dash-grid > .card {
+    grid-column: span 12;
+  }
+
+  .dash-grid > .span-6 {
+    grid-column: span 6;
+  }
+
+  .dash-grid > .span-4 {
+    grid-column: span 4;
+  }
+
+  .dash-grid > .span-8 {
+    grid-column: span 8;
+  }
+
+  .dash-grid > .hero,
+  .dash-grid > .card.hero {
+    grid-column: span 12;
+  }
+}
+
+/* =====================================================================
+   Dense numeric presentation
+   ===================================================================== */
+body.dense {
+  --vm-number-lg: 30px;
+  --vm-number: 22px;
+}
+
+body.dense .vm-number.lg {
+  font-size: var(--vm-number-lg);
+  letter-spacing: -0.5px;
+}
+
+body.dense .vm-number {
+  font-size: var(--vm-number);
+  letter-spacing: -0.3px;
+}
+
+body.dense .hero-amount {
+  font-size: 34px;
+}
+
+body.dense table.grid {
+  font-size: 13px;
+}
+
+body.dense table.grid td,
+body.dense table.grid th {
+  padding: 7px 10px;
+}
+
+body.dense .num,
+body.dense .vm-number,
+body.dense .recurring-amt {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Programmatic drill destination. */
+#acct-tx:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}

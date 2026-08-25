@@ -7,16 +7,18 @@ export const CATEGORY_RULES_VERSION = 1;
 // falling back to the structural rooter. Adding a merchant to the
 // intelligence file changes grouping with no edit to this file.
 import { resolveMerchant } from './merchant-intelligence.js';
-import { cutAtBranchHyphen } from '../application/shared-helpers.js';
+import { cutAtBranchHyphen } from '../application/core/shared-helpers.js';
 // The structural fallback label lives in categorise.js. category-rules.js is
 // allowed to import it because categorise.js never imports category-rules.js
 // back (it only pulls merchant-intelligence.js and shared-helpers.js), so there
 // is no import cycle. This one import is what lets merchantDisplayLabel below be
 // the single, authoritative clean-name function every view calls.
-import { merchantLabel } from '../application/categorise.js';
+import { merchantLabel } from '../application/statements/categorise.js';
 
 function collapseSpaces(value) {
-  return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+  return String(value == null ? '' : value)
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function normaliseMerchantMatch(value) {
@@ -58,7 +60,8 @@ function seedRuleMap(rules = []) {
 
 export function rulesToMerchantOverrides(rules = []) {
   const overrides = {};
-  for (const rule of seedRuleMap(rules).values()) overrides[merchantRuleKeyFromMatch(rule.match)] = rule.category;
+  for (const rule of seedRuleMap(rules).values())
+    overrides[merchantRuleKeyFromMatch(rule.match)] = rule.category;
   return overrides;
 }
 
@@ -97,7 +100,9 @@ export function mergeCategoryRules(existing = [], incoming = []) {
     }
   }
   return {
-    rules: [...byKey.values()].sort((a, b) => a.match.localeCompare(b.match) || a.updatedAt.localeCompare(b.updatedAt)),
+    rules: [...byKey.values()].sort(
+      (a, b) => a.match.localeCompare(b.match) || a.updatedAt.localeCompare(b.updatedAt)
+    ),
     inserted,
     updated,
     ignored,
@@ -115,12 +120,16 @@ export function exportCategoryRulesFile(rules = [], exportedAt = new Date()) {
     .map(cleanRule)
     .filter(Boolean)
     .sort((a, b) => a.match.localeCompare(b.match) || a.updatedAt.localeCompare(b.updatedAt));
-  return JSON.stringify({
-    type: CATEGORY_RULES_TYPE,
-    version: CATEGORY_RULES_VERSION,
-    exportedAt: exportedAt.toISOString(),
-    rules: cleaned,
-  }, null, 2);
+  return JSON.stringify(
+    {
+      type: CATEGORY_RULES_TYPE,
+      version: CATEGORY_RULES_VERSION,
+      exportedAt: exportedAt.toISOString(),
+      rules: cleaned,
+    },
+    null,
+    2
+  );
 }
 
 export function parseCategoryRulesFile(fileText) {
@@ -202,18 +211,38 @@ export function categoryRuleFromStoreRecord(record) {
 // without a separator (e.g. 'Rubis Waterloo', 'Totalenergies') are left to the
 // config exception layer above - config only patches what construction cannot.
 const BRAND_SUFFIX_RE = new RegExp(
-  '(?:' + [
-    'gas\\s+station', 'service\\s+station',
-    'fresh\\s+foods?', 'food\\s+stores?',
-    'country\\s+club', 'supermarket', 'super\\s+cent(?:er|re)',
-    'corner\\s+te\\w*',
-    'enterprises?', 'enterpr\\w*',
-    'services?', 'solutions?', 'holdings?',
-    'limited', 'limite', 'limit', 'limi', 'ltd', 'llc', 'inc',
-    'energy', 'stores?',
-  ].join('|') + ')\\s*$', 'i');
+  '(?:' +
+    [
+      'gas\\s+station',
+      'service\\s+station',
+      'fresh\\s+foods?',
+      'food\\s+stores?',
+      'country\\s+club',
+      'supermarket',
+      'super\\s+cent(?:er|re)',
+      'corner\\s+te\\w*',
+      'enterprises?',
+      'enterpr\\w*',
+      'services?',
+      'solutions?',
+      'holdings?',
+      'limited',
+      'limite',
+      'limit',
+      'limi',
+      'ltd',
+      'llc',
+      'inc',
+      'energy',
+      'stores?',
+    ].join('|') +
+    ')\\s*$',
+  'i'
+);
 const BRAND_PLACE_TAIL_RE = /\s+(?:jamaica|default\s+city)\s*$/i;
-function brandLetters(s) { return (String(s).match(/[A-Za-z]/g) || []).length; }
+function brandLetters(s) {
+  return (String(s).match(/[A-Za-z]/g) || []).length;
+}
 // Cut the branch tail at the first hyphen whose preceding head already carries
 // >= 3 letters. Whitespace around the hyphen is not required; the head guard is
 // what keeps a brand-internal hyphen ('Hi-Lo', 'Bk-Bar') intact.
@@ -225,19 +254,25 @@ function cutBranchTail(root) {
 }
 function dropBrandSuffixes(root) {
   let prev;
-  do { prev = root; root = collapseSpaces(root.replace(BRAND_SUFFIX_RE, '')); } while (root !== prev && root);
+  do {
+    prev = root;
+    root = collapseSpaces(root.replace(BRAND_SUFFIX_RE, ''));
+  } while (root !== prev && root);
   return root || prev;
 }
+const _brandRootCache = new Map();
 export function merchantBrandRoot(description) {
-  let seg = collapseSpaces(String(description == null ? '' : description).split(',')[0]);
+  const cacheKey = String(description == null ? '' : description);
+  if (_brandRootCache.has(cacheKey)) return _brandRootCache.get(cacheKey);
+  let seg = collapseSpaces(cacheKey.split(',')[0]);
   // Text before a star token ('AMZN*REF' and 'WWW.AMAZON* 113' both -> the head).
   let root = collapseSpaces(seg.split('*')[0]);
-  root = root.replace(/#\s*\d[\d-]*\s*$/, '');   // trailing store number '#1026'
+  root = root.replace(/#\s*\d[\d-]*\s*$/, ''); // trailing store number '#1026'
   root = root.replace(/\s+\d[\d-]{2,}\s*$/, ''); // trailing ref / phone group
   root = collapseSpaces(root.replace(/[\s-]+$/, ''));
   const beforeCut = root;
-  root = cutBranchTail(root);                          // branch tail after a hyphen
-  root = dropBrandSuffixes(root);                      // corporate / descriptor suffix
+  root = cutBranchTail(root); // branch tail after a hyphen
+  root = dropBrandSuffixes(root); // corporate / descriptor suffix
   root = collapseSpaces(root.replace(BRAND_PLACE_TAIL_RE, '')); // trailing country token
   root = dropBrandSuffixes(root);
   root = collapseSpaces(root.replace(/\s+\d[\d-]{2,}\s*$/, '')); // store no. a suffix exposed
@@ -245,7 +280,9 @@ export function merchantBrandRoot(description) {
   if (brandLetters(root) < 3) root = beforeCut;
   if (brandLetters(root) < 3) root = seg;
   const key = collapseSpaces(root).toUpperCase().slice(0, 32);
-  return key || seg.toUpperCase().slice(0, 32) || 'UNKNOWN';
+  const result = key || seg.toUpperCase().slice(0, 32) || 'UNKNOWN';
+  _brandRootCache.set(cacheKey, result);
+  return result;
 }
 
 // RETIRED as the primary brand source. Config-driven brand rules (cfg.merchantBrands)
@@ -272,17 +309,35 @@ export function compileBrandRules(cfg) {
   return out;
 }
 
-// The canonical GROUP KEY for a description: the first matching brand rule's
-// key, else the rules-free brand root. Rules are tested against the original
-// first comma segment (lower-cased), exactly like the category rules test the
-// description, so 'Www.Amazon* 113-217508' and 'Amzn Mktp US Am' both resolve to
-// the AMAZON brand while an unseen merchant falls back to its own clean root.
+const _resolveMerchantCache = new WeakMap();
+function resolveMerchantCached(description, intel) {
+  if (!intel) return resolveMerchant(description, intel);
+  let byDesc = _resolveMerchantCache.get(intel);
+  if (!byDesc) {
+    byDesc = new Map();
+    _resolveMerchantCache.set(intel, byDesc);
+  }
+  const key = String(description == null ? '' : description);
+  if (byDesc.has(key)) return byDesc.get(key);
+  const result = resolveMerchant(description, intel);
+  byDesc.set(key, result);
+  return result;
+}
+
 export function merchantGroupKey(description, brandRules = [], intel = null) {
-  // 1) researched merchant intelligence wins (collapses AMZN MKTP US / AMAZON
-  //    MKTPL / WWW.AMAZON to one AMAZON group, MONARCH -> FONTANA, etc.).
-  if (intel) { const m = resolveMerchant(description, intel); if (m) return String(m.merchantGroup || m.canonicalName).toUpperCase().slice(0, 32); }
-  const hay = collapseSpaces(String(description == null ? '' : description).split(',')[0]).toLowerCase();
-  for (const rule of brandRules || []) { if (rule && rule.re && rule.re.test(hay)) return rule.key; }
+  if (intel) {
+    const m = resolveMerchantCached(description, intel);
+    if (m)
+      return String(m.merchantGroup || m.canonicalName)
+        .toUpperCase()
+        .slice(0, 32);
+  }
+  const hay = collapseSpaces(
+    String(description == null ? '' : description).split(',')[0]
+  ).toLowerCase();
+  for (const rule of brandRules || []) {
+    if (rule && rule.re && rule.re.test(hay)) return rule.key;
+  }
   return merchantBrandRoot(description);
 }
 
@@ -290,9 +345,16 @@ export function merchantGroupKey(description, brandRules = [], intel = null) {
 // or null when no brand rule matched so the caller can fall back to its existing
 // per-merchant label formatting. Never changes a stored description.
 export function merchantBrandLabel(description, brandRules = [], intel = null) {
-  if (intel) { const m = resolveMerchant(description, intel); if (m) return m.brand; }
-  const hay = collapseSpaces(String(description == null ? '' : description).split(',')[0]).toLowerCase();
-  for (const rule of brandRules || []) { if (rule && rule.re && rule.re.test(hay)) return rule.label; }
+  if (intel) {
+    const m = resolveMerchantCached(description, intel);
+    if (m) return m.brand;
+  }
+  const hay = collapseSpaces(
+    String(description == null ? '' : description).split(',')[0]
+  ).toLowerCase();
+  for (const rule of brandRules || []) {
+    if (rule && rule.re && rule.re.test(hay)) return rule.label;
+  }
   return null;
 }
 
@@ -308,14 +370,22 @@ export function merchantBrandLabel(description, brandRules = [], intel = null) {
 // merchantBrandLabel(...) || merchantLabel(...) formula by hand. Pure;
 // presentation-only, it never changes a stored description, category or total.
 export function merchantDisplayLabel(
-  description, brandRules = [], intel = null,
-  keepUpper = new Set(), smallWords = new Set()
+  description,
+  brandRules = [],
+  intel = null,
+  keepUpper = new Set(),
+  smallWords = new Set()
 ) {
-  return merchantBrandLabel(description, brandRules, intel)
-    || merchantLabel(
-         String(description == null ? '' : description).split(',')[0].trim(),
-         keepUpper, smallWords
-       );
+  return (
+    merchantBrandLabel(description, brandRules, intel) ||
+    merchantLabel(
+      String(description == null ? '' : description)
+        .split(',')[0]
+        .trim(),
+      keepUpper,
+      smallWords
+    )
+  );
 }
 
 // The branch / location of a merchant, kept queryable as a drill-down detail so
@@ -324,7 +394,9 @@ export function merchantDisplayLabel(
 // else the text after a spaced ' - ' in the first segment; '' when neither holds
 // a real place. Pure; presentation-only.
 export function merchantBranch(description) {
-  const parts = String(description == null ? '' : description).split(',').map((s) => collapseSpaces(s));
+  const parts = String(description == null ? '' : description)
+    .split(',')
+    .map((s) => collapseSpaces(s));
   const hasLetter = (s) => /[A-Za-z]/.test(s);
   if (parts.length > 1 && hasLetter(parts[1])) return parts[1];
   const m = /\s-\s*(.+)$/.exec(parts[0] || '');

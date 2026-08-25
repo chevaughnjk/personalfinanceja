@@ -23,7 +23,11 @@ const http = require('node:http');
 const projectRoot = path.resolve(__dirname, '..');
 
 let chokidar = null;
-try { chokidar = require('chokidar'); } catch { /* watcher optional until installed */ }
+try {
+  chokidar = require('chokidar');
+} catch {
+  /* watcher optional until installed */
+}
 
 let mainWindow = null;
 let watcher = null;
@@ -44,10 +48,15 @@ let localServer = null;
  * manifest.json is relative, so it resolves the same way either way.
  * ------------------------------------------------------------------- */
 const MIME = {
-  '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8', '.webmanifest': 'application/manifest+json',
-  '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
   '.map': 'application/json; charset=utf-8',
 };
 
@@ -57,11 +66,21 @@ function startLocalServer() {
       let reqPath = decodeURIComponent((req.url || '/').split('?')[0]);
       if (reqPath === '/') reqPath = '/index.html';
       const resolved = path.normalize(path.join(projectRoot, reqPath));
-      if (!resolved.startsWith(projectRoot)) { res.writeHead(403); res.end('Forbidden'); return; }
+      if (!resolved.startsWith(projectRoot)) {
+        res.writeHead(403);
+        res.end('Forbidden');
+        return;
+      }
       fs.readFile(resolved, (err, data) => {
-        if (err) { res.writeHead(404); res.end('Not found'); return; }
+        if (err) {
+          res.writeHead(404);
+          res.end('Not found');
+          return;
+        }
         const ext = path.extname(resolved).toLowerCase();
-        res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+        res.writeHead(200, {
+          'Content-Type': MIME[ext] || 'application/octet-stream',
+        });
         res.end(data);
       });
     });
@@ -82,8 +101,8 @@ async function createWindow() {
     title: 'Personal Finance Analyser',
     webPreferences: {
       preload: path.join(__dirname, 'electron-preload.cjs'),
-      contextIsolation: true,   // renderer cannot see Node
-      nodeIntegration: false,   // no direct require() in the UI
+      contextIsolation: true, // renderer cannot see Node
+      nodeIntegration: false, // no direct require() in the UI
       sandbox: true,
     },
   });
@@ -92,9 +111,15 @@ async function createWindow() {
 }
 
 app.whenReady().then(createWindow);
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
-app.on('before-quit', () => { if (localServer) localServer.close(); });
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+app.on('before-quit', () => {
+  if (localServer) localServer.close();
+});
 
 function isSettledPdf(file) {
   return file.toLowerCase().endsWith('.pdf');
@@ -129,7 +154,10 @@ ipcMain.handle('read-file', async (_e, filePath) => {
 ipcMain.handle('watch-folder', async (_e, folder) => {
   if (!chokidar) return { ok: false, reason: 'chokidar-not-installed' };
   if (!folder || !fs.existsSync(folder)) return { ok: false, reason: 'folder-missing' };
-  if (watcher) { await watcher.close(); watcher = null; }
+  if (watcher) {
+    await watcher.close();
+    watcher = null;
+  }
   watcher = chokidar.watch(folder, {
     depth: 0,
     ignoreInitial: true,
@@ -138,6 +166,8 @@ ipcMain.handle('watch-folder', async (_e, folder) => {
   watcher.on('add', (file) => {
     if (isSettledPdf(file) && mainWindow) mainWindow.webContents.send('new-file', file);
   });
-  watcher.on('error', () => { if (mainWindow) mainWindow.webContents.send('watch-error'); });
+  watcher.on('error', () => {
+    if (mainWindow) mainWindow.webContents.send('watch-error');
+  });
   return { ok: true };
 });

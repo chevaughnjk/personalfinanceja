@@ -13,10 +13,10 @@ only when you deliberately export or share it.
 
 ## Supported statements
 
-* Scotiabank-style credit-card statement PDFs, including supported NCB variants.
-* Scotiabank bank-account PDFs containing a Withdrawals & Deposits ledger and
+- Scotiabank-style credit-card statement PDFs, including supported NCB variants.
+- Scotiabank bank-account PDFs containing a Withdrawals & Deposits ledger and
   Account Summary.
-* Jamaica-focused currency handling with JMD as the configured base currency.
+- Jamaica-focused currency handling with JMD as the configured base currency.
   Foreign-currency accounts are parsed, reconciled, and displayed separately;
   they are not mixed into JMD totals.
 
@@ -25,19 +25,19 @@ reconciliation result and totals after importing a new statement format.
 
 ## Features
 
-* Automatic statement-type detection and PDF text parsing.
-* Card categorisation using researched merchant intelligence, personal rules,
+- Automatic statement-type detection and PDF text parsing.
+- Card categorisation using researched merchant intelligence, personal rules,
   and editable configuration rules.
-* Manual category corrections, optional merchant rules, and undo.
-* Statement-level reconciliation for card and bank ledgers.
-* Search, sorting, month/category/type/amount filters, and monthly insights.
-* CSV export and printable reports through the browser print dialog.
-* Encrypted, passphrase-protected `.ccah` history export/import with idempotent
+- Manual category corrections, optional merchant rules, and undo.
+- Statement-level reconciliation for card and bank ledgers.
+- Search, sorting, month/category/type/amount filters, and monthly insights.
+- CSV export and printable reports through the browser print dialog.
+- Encrypted, passphrase-protected `.ccah` history export/import with idempotent
   merging across all ledgers.
-* Separate JSON export/import for portable, human-editable category rules.
-* Desktop statements-folder watching with automatic pickup of new PDFs.
-* Installable PWA for supported browsers, including iPhone Home Screen use.
-* Light and dark themes.
+- Separate JSON export/import for portable, human-editable category rules.
+- Desktop statements-folder watching with automatic pickup of new PDFs.
+- Installable PWA for supported browsers, including iPhone Home Screen use.
+- Light and dark themes.
 
 ## Setup
 
@@ -65,9 +65,8 @@ npm start
 ```
 
 Create desktop installers with `npm run build`; output is written to `dist/`.
-The current checkout does not contain the `tests/` directory referenced by the
-`npm test` script, so the command currently completes without discovering any
-tests.
+Run the executable proof suite with `npm test`; proof files use the
+`tests/*_proof.mjs` naming convention.
 
 ## Usage
 
